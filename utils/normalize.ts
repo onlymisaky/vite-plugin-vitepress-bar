@@ -1,11 +1,13 @@
-import { NormalizeOptions, Options } from './../types/index'
+import { NormalizeOptions, Options } from '../types/index'
+import { FileInfo } from '../core/read-dir-tree/types'
 
-export function normalizeType(param: string): 'merge' | 'replace' {
-  // TODO
-  // if (['merge', 'replace'].includes(param)) {
-  //   return param as 'merge' | 'replace'
-  // }
-  return 'replace'
+export function normalizeGenType(param: Options['genType']): Options['genType'] {
+  if (typeof param === 'function') {
+    return param
+  }
+  return (source, target) => {
+    return target
+  }
 }
 
 const ignorePathReg = /^(?!.*(?:\.vitepress|\.git|node_modules|dist)).*$/
@@ -82,23 +84,20 @@ export function normalizeUsedFor(param: Options['usedFor']) {
       }
     }
   }
-  return (absolutePath: string) => {
-    if (absolutePath.includes('node_modules')) {
-      return {
-        nav: true,
-        sidebar: true
-      }
+  return (absolutePath: string, parents: FileInfo[], children: string[]) => {
+    if (parents.length === 0) {
+      return { nav: false, sidebar: false }
     }
-    return {
-      nav: false,
-      sidebar: true
+    if (parents.length === 1) {
+      return { nav: true, sidebar: false }
     }
+    return { nav: false, sidebar: true }
   }
 }
 
 export function normalizeOptions(options: Options): NormalizeOptions {
   const userOptions: NormalizeOptions = {
-    type: normalizeType(options.type),
+    genType: normalizeGenType(options.genType),
     included: normalizeIncluded(options.included),
     excluded: (absolutePath: string) => !normalizeIncluded(options.included)(absolutePath),
     useContent: !!options.useContent,

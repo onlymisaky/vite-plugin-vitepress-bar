@@ -1,15 +1,11 @@
-import { Plugin, UserConfig as ViteUserConfig } from 'vite'
-import { VitePluginOptions, UserConfig, Options } from './types/index'
-import { getStatTree } from './utils/index'
-import { normalizeOptions } from './utils/normalize'
 import fg from 'fast-glob'
+import { Plugin } from 'vite'
+import { UserConfig, Options } from './types/index'
+import { createBar } from './utils'
+import { normalizeOptions } from './utils/normalize'
+import { debounceCheckRestart } from './utils/check-restart'
 
 export default (options?: Partial<Options>) => {
-  let resolve, reject
-  const promise = new Promise<Plugin>((res, rej) => {
-    resolve = res
-    reject = rej
-  })
 
   const userConfig = normalizeOptions((options || {}) as Options)
 
@@ -32,22 +28,19 @@ export default (options?: Partial<Options>) => {
         }
         return excluded
       }
-      const { sidebar, nav } = await getStatTree(srcDir, userConfig)
+      const bar = await createBar(srcDir, userConfig)
+      const { themeConfig } = viteConfig.vitepress.site;
+      const { nav, sidebar } = userConfig.genType({ sidebar: themeConfig.sidebar, nav: themeConfig.nav, }, bar)
       viteConfig.vitepress.site.themeConfig.sidebar = sidebar
       viteConfig.vitepress.site.themeConfig.nav = nav
       return config
     },
     configureServer(server) {
-      server.watcher.on('all', (eventName, path, stats) => {
-        const events = ['add', 'addDir', 'unlink', 'unlinkDir']
-        if (!events.includes(eventName)) {
-          return
-        }
+      server.watcher.on('all', (eventName, filepath) => {
+        debounceCheckRestart(eventName, filepath, server.restart, userConfig)
       })
-      // const { watcher, restart } = server
-      // watcher.add()
     },
   }
-  resolve(plugin)
+
   return plugin
 }
