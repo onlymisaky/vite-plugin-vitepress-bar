@@ -6,7 +6,7 @@ import { FileInfo } from '../core/read-dir-tree/types'
 import { readDirTree } from '../core/read-dir-tree'
 import { genSilderbarAndNav } from './bar'
 import { sort } from './sort'
-import { useContent } from './useContent'
+import { readContent } from './read-content'
 
 function isNeedProcess(absolutePath: string, options: NormalizeOptions) {
   const included = options.included(absolutePath)
@@ -35,7 +35,7 @@ export function createBar(filepath, options: NormalizeOptions): Promise<{
       onStats: (dir, filename, stats, parents) => {
         const postStats = {} as FileInfo;
         if (options.useContent) {
-          useContent(stats, postStats, dir, promises)
+          readContent(stats, postStats, dir, promises)
         }
         return postStats
       },
