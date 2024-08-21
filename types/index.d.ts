@@ -28,7 +28,7 @@ interface Bar {
 
 export interface Options {
   /**
-   * 指定生成的 `bar` 替换原有的 `themeConfig.nav `和 `themeConfig.sidebar` ，或与原有的配置合并
+   * 生成的 `bar` 与原有的 `themeConfig.nav `和 `themeConfig.sidebar` 生成新的 `bar` ，默认替换原有的 `bar`
    */
   genType: (source: Bar, target: Bar) => Bar;
   /**

@@ -30,11 +30,10 @@ export default defineConfig({
 
 ## API
 
-### type
+### genType
 
-- 说明: 指定生成的 `bar` 替换原有的 `themeConfig.nav `和 `themeConfig.sidebar` ，或与原有的配置合并
-- 可选值: `merge` | `replace`
-- 默认值: `replace`
+- 说明: 生成的 `bar` 与原有的 `themeConfig.nav `和 `themeConfig.sidebar` 生成新的 `bar` ，默认替换原有的 `bar`
+- 类型: (source: { sidebar, nav }, target: { sidebar, nav }) => { sidebar, nav }
 
 ### included
 

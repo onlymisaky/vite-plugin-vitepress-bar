@@ -1,4 +1,4 @@
-import { NormalizeOptions, Options } from '../types/index'
+import { Bar, NormalizeOptions, Options } from '../types/index'
 import { FileInfo } from '../core/read-dir-tree/types'
 
 export function normalizeGenType(param: Options['genType']): Options['genType'] {
@@ -6,7 +6,16 @@ export function normalizeGenType(param: Options['genType']): Options['genType'] 
     return param
   }
   return (source, target) => {
-    return target
+    const { sidebar: sourceSidebar, nav: sourceNav } = source
+    const { sidebar, nav } = target
+    const bar: Bar = { ...target }
+    if (!sidebar) {
+      bar.sidebar = sourceSidebar
+    }
+    if (!nav) {
+      bar.nav = sourceNav
+    }
+    return bar
   }
 }
 
