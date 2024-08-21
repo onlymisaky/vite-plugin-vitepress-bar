@@ -19,14 +19,14 @@ export function sort<T extends FileInfo>(children: T[], options: NormalizeOption
         create: aStats.ctime.getTime() + '',
         modify: aStats.mtime.getTime() + '',
         size: aStats.size + '',
-        content: aStats.__content__ || '',
+        content: a.__content__ || '',
       }
       const _b: SortItem = {
         name: b.text as string,
         create: bStats.ctime.getTime() + '',
         modify: bStats.mtime.getTime() + '',
         size: bStats.size + '',
-        content: bStats.__content__ || '',
+        content: b.__content__ || '',
       }
       return options.sort(_a, _b)
     } catch (error) {
