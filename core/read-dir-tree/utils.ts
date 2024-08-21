@@ -50,7 +50,7 @@ export function createDefaultOptions<T extends FileInfo>(options?: Options<T>): 
   }
 
   function onReadDir(absolutePath: string, filename: string, postStats: T, parents: T[], childFiles: string[]) {
-    let result = {}
+    let result = Object.assign({}, postStats)
     if (options && typeof options.onReadDir === 'function') {
       result = options.onReadDir(absolutePath, filename, postStats, parents, childFiles)
     }

@@ -4,6 +4,7 @@ import { DefaultTheme } from 'vitepress'
 import { NormalizeOptions } from '../types'
 import { FileInfo } from '../core/read-dir-tree/types'
 import { repeatTree } from '../core/repeat-tree'
+import { sort } from './sort'
 
 export function createNavItem(item: Required<FileInfo>, index: number, parents: Required<FileInfo>[], options: NormalizeOptions): DefaultTheme.NavItem {
   const text = options.text(item.__fullpath__, item.__filename__)
@@ -48,6 +49,11 @@ export function genSilderbarAndNav(result: FileInfo, options: NormalizeOptions) 
         // @ts-ignore
         const sidebarItem = createSidebarItem(item.__fullpath__, item.__filename__, item.__stats__, parents, options)
         sidebar.push(sidebarItem)
+      }
+    },
+    onBeforeChildren: (children, parents) => {
+      if (options.useContent) {
+        sort(children, options)
       }
     },
   })

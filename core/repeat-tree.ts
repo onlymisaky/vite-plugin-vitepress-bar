@@ -8,6 +8,7 @@ export interface Options<T> {
   childKey: keyof T,
   parents: T[],
   onItem: (item: T, index: number, parents: T[]) => void,
+  onBeforeChildren: (children: T[], parents: T[]) => void,
   onChildren: (children: T[], parents: T[]) => void,
   onFinish: () => void,
 }
@@ -19,9 +20,11 @@ export function repeatTree<K extends string, T extends TreeItem<K>>(tree: T[], o
     childKey = 'children',
     parents = [],
     onItem = (item, index, parents) => { },
+    onBeforeChildren = (children, parents) => { },
     onChildren = (children, parents) => { },
     onFinish = () => { },
   } = options
+  onBeforeChildren(tree, parents)
   for (let index = 0; index < tree.length; index++) {
     const item = tree[index]
     const { [childKey]: children, } = item

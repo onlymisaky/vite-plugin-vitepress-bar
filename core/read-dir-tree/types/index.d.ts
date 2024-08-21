@@ -7,6 +7,7 @@ export interface FileInfo {
   __filename__?: string,
   __children__?: string[],
   __parents__?: any[]
+  __content__?: string
 }
 
 export interface Options<T extends FileInfo = FileInfo> {
