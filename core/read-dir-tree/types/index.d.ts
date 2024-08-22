@@ -55,7 +55,7 @@ export interface DirTreeOptions<ChildKey extends string, T extends DirTreeItem<C
   isSkip?: (fullPath: string, filename: string, stats: Stats, parents: T[]) => boolean;
   /**
    * `fs.readdir` 回调
-   * 返回结果将会作为 tree-item
+   * 返回结果将会作为 dir-tree-item
    * 无论是否传入该函数，无论传入的函数是否有返回值，都会返回一个含有只读属性 `__fileInfo__` 和 `[childKey]` 属性的对象
    * @param fullPath 当前文件路径
    * @param filename 文件名

@@ -25,7 +25,7 @@ export function createBar(filepath, options: NormalizeOptions): Promise<{
   nav: DefaultTheme.NavItem[]
 }> {
   const fullPath = path.resolve(process.cwd(), filepath)
-  const promises: Promise<string>[] = []
+  const readContentPromises: Promise<string>[] = []
   return new Promise((resolve) => {
     readDirTree(fullPath, {
       processStatsError: 'record',
@@ -35,7 +35,7 @@ export function createBar(filepath, options: NormalizeOptions): Promise<{
       onStats: (dir, filename, stats, parents) => {
         const postStats = {} as DirTreeItem;
         if (options.useContent) {
-          readContent(stats, postStats, dir, promises)
+          readContent(stats, postStats, dir, readContentPromises)
         }
         return postStats
       },
@@ -49,7 +49,7 @@ export function createBar(filepath, options: NormalizeOptions): Promise<{
         if (errors.length) {
           console.log(errors);
         }
-        Promise.all(promises).then(() => {
+        Promise.all(readContentPromises).then(() => {
           resolve(genSilderbarAndNav(result, options))
         })
       }
