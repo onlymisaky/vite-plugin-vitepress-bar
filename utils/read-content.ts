@@ -1,19 +1,18 @@
 import * as fs from 'fs'
 import { readFile } from '../core/read-file'
-import { FileInfo } from '../core/read-dir-tree/types'
 import { defineFileInfo } from '../core/read-dir-tree/utils'
 
-export function readContent<T extends FileInfo>(stats: fs.Stats, postStats: T, dir: string, promises: Promise<string>[]) {
+export function readContent<T>(stats: fs.Stats, postStats: T, dir: string, promises: Promise<string>[]) {
   if (stats.isFile()) {
     const ps = readFile(dir).then((content) => {
-      defineFileInfo(postStats, { __content__: content })
+      defineFileInfo(postStats, { content: content })
       return content
     }).catch((err) => {
-      defineFileInfo(postStats, { __content__: '' })
+      defineFileInfo(postStats, { content: '' })
       return ''
     })
     promises.push(ps)
   } else {
-    defineFileInfo(postStats, { __content__: '' })
+    defineFileInfo(postStats, { content: '' })
   }
 }

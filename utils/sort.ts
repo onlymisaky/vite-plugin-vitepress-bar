@@ -1,34 +1,41 @@
 import * as fs from 'fs'
 import { NormalizeOptions, SortItem } from '../types'
-import { FileInfo } from '../core/read-dir-tree/types'
+import { FileInfo, WithFileInfo } from '../core/read-dir-tree/types'
 
 const normalDate = new Date(2000, 0, 1)
 const normalStats: Partial<fs.Stats> = {
-  mtime: normalDate,
   ctime: normalDate,
-  size: 0
+  mtime: normalDate,
+  size: 0,
+}
+const normalFileInfo: Partial<FileInfo> = {
+  children: [],
+  parents: [],
+  content: '',
 }
 
-export function sort<T extends FileInfo>(children: T[], options: NormalizeOptions) {
+export function sort<T extends WithFileInfo>(children: T[], options: NormalizeOptions) {
   return children.sort((a, b) => {
     try {
-      const aStats = { ...normalStats, ...a.__stats__ } as FileInfo
-      const bStats = { ...normalStats, ...b.__stats__ } as FileInfo
-      const _a: SortItem = {
-        name: a.text as string,
-        create: aStats.ctime.getTime() + '',
-        modify: aStats.mtime.getTime() + '',
-        size: aStats.size + '',
-        content: a.__content__ || '',
+      Object.assign(a.__fileInfo__.stats, normalStats)
+      Object.assign(b.__fileInfo__.stats, normalStats)
+      const itemA: FileInfo = { ...a.__fileInfo__, ...normalFileInfo }
+      const itemB: FileInfo = { ...b.__fileInfo__, ...normalFileInfo }
+      const sortA: SortItem = {
+        name: itemA.filename,
+        create: itemA.stats.ctime.getTime() + '',
+        modify: itemA.stats.mtime.getTime() + '',
+        size: itemA.stats.size + '',
+        content: itemA.content || '',
       }
-      const _b: SortItem = {
-        name: b.text as string,
-        create: bStats.ctime.getTime() + '',
-        modify: bStats.mtime.getTime() + '',
-        size: bStats.size + '',
-        content: b.__content__ || '',
+      const sortB: SortItem = {
+        name: itemB.filename,
+        create: itemB.stats.ctime.getTime() + '',
+        modify: itemB.stats.mtime.getTime() + '',
+        size: itemB.stats.size + '',
+        content: itemB.content || '',
       }
-      return options.sort(_a, _b)
+      return options.sort(sortA, sortB)
     } catch (error) {
       return 0
     }

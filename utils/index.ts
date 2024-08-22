@@ -2,16 +2,16 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { DefaultTheme } from 'vitepress'
 import { NormalizeOptions } from '../types'
-import { FileInfo } from '../core/read-dir-tree/types'
+import { DirTreeItem } from '../core/read-dir-tree/types'
 import { readDirTree } from '../core/read-dir-tree'
 import { genSilderbarAndNav } from './bar'
 import { sort } from './sort'
 import { readContent } from './read-content'
 
-function isNeedProcess(absolutePath: string, options: NormalizeOptions) {
-  const included = options.included(absolutePath)
-  const excluded = options.excluded(absolutePath)
-  const exists = fs.existsSync(absolutePath)
+function isNeedProcess(fullPath: string, options: NormalizeOptions) {
+  const included = options.included(fullPath)
+  const excluded = options.excluded(fullPath)
+  const exists = fs.existsSync(fullPath)
 
   if (!exists) return false
   if (!included) return false
@@ -24,16 +24,16 @@ export function createBar(filepath, options: NormalizeOptions): Promise<{
   sidebar: DefaultTheme.Sidebar,
   nav: DefaultTheme.NavItem[]
 }> {
-  const absolutePath = path.resolve(process.cwd(), filepath)
+  const fullPath = path.resolve(process.cwd(), filepath)
   const promises: Promise<string>[] = []
   return new Promise((resolve) => {
-    readDirTree<FileInfo>(absolutePath, {
+    readDirTree(fullPath, {
       processStatsError: 'record',
       processReadDirError: 'record',
       isSkip: (dir, filename, stats, parents) => !isNeedProcess(dir, options),
       childKey: 'items',
       onStats: (dir, filename, stats, parents) => {
-        const postStats = {} as FileInfo;
+        const postStats = {} as DirTreeItem;
         if (options.useContent) {
           readContent(stats, postStats, dir, promises)
         }

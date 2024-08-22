@@ -2,10 +2,10 @@ type TreeItem<K extends string = 'children'> = {
   [P in K]?: TreeItem<K>[]
 } & Record<string, any>
 
-export interface Options<T> {
+export interface RepeatTreeOptions<K extends string, T> {
   idKey: keyof T,
   pIdKey: keyof T,
-  childKey: keyof T,
+  childKey: K,
   parents: T[],
   onItem: (item: T, index: number, parents: T[]) => void,
   onBeforeChildren: (children: T[], parents: T[]) => void,
@@ -13,7 +13,10 @@ export interface Options<T> {
   onFinish: () => void,
 }
 
-export function repeatTree<K extends string, T extends TreeItem<K>>(tree: T[], options: Partial<Options<T>>) {
+export function repeatTree<
+  K extends string,
+  T extends TreeItem<K> = TreeItem<K>
+>(tree: T[], options: Partial<RepeatTreeOptions<K, T>>) {
   const {
     idKey = 'id',
     pIdKey = 'pId',

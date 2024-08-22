@@ -38,12 +38,12 @@ export default defineConfig({
 ### included
 
 - 说明: 指定需要生成 `nav` 和 `sidebar` 的目录，默认值为 `srcDir` ，并排除该目录 `.vitepress`、`.git`、`node_modules`、`dist` 目录。优先级高于 `excluded`
-- 类型: `string` | `string[]` | `RegExp` | `RegExp[]` | `(absolutePath: string) => boolean`
+- 类型: `string` | `string[]` | `RegExp` | `RegExp[]` | `(fullPath: string) => boolean`
 
 ### excluded
 
 - 说明: 指定需要排除的目录，默认值为 `srcExclude` +  `.vitepress`、`.git`、`node_modules`、`dist` 目录。优先级低于 `included`
-- 类型: `string` | `string[]` | `RegExp` | `RegExp[]` | `(absolutePath: string) => boolean`
+- 类型: `string` | `string[]` | `RegExp` | `RegExp[]` | `(fullPath: string) => boolean`
 
 ### useContent
 
@@ -58,14 +58,14 @@ export default defineConfig({
 ### text
 
 - 说明: 根据文件名、创建时间、修改时间、文件大小、文件内容生成标题，默认以文件名为标题
-- 类型: `(absolutePath: string, lastPathname: string) => string`
+- 类型: `(fullPath: string, lastPathname: string) => string`
 
 ### collapsed
 
 - 说明: 同 `SidebarItem.collapsed`
-- 类型: `boolean` | `(absolutePath: string) => boolean`
+- 类型: `boolean` | `(fullPath: string) => boolean`
 
 ### usedFor
 
 - 说明: 配置当前的 `bar` 用于 `nav` 还是 `sidebar` 。默认一级目录(不包含文件)为 `nav` ，二级目录为 `sidebar` ，也可以通过函数配置
-- 类型: `{ nav: boolean, sidebar: boolean }` | `(data: {  }) => { nav: boolean, sidebar: boolean }`
+- 类型: `{ nav: boolean, sidebar: boolean }` | `(fileInfo: { stats: fs.Stats, fullpath: string, filename: string, children: string[], parents: any[], content: string}) => { nav: boolean, sidebar: boolean }`

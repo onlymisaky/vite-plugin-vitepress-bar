@@ -17,14 +17,14 @@ export default (options?: Partial<Options>) => {
       const { srcDir, userConfig: _userConfig, rewrites } = vitepress
       const { srcExclude } = _userConfig
       const _excluded = userConfig.excluded
-      userConfig.excluded = (absolutePath: string) => {
-        let excluded = _excluded(absolutePath)
+      userConfig.excluded = (fullPath: string) => {
+        let excluded = _excluded(fullPath)
         if (excluded) {
           return excluded
         }
         if (srcExclude) {
           const arr = fg.globSync(srcExclude)
-          excluded = arr.some((item) => absolutePath.includes(item))
+          excluded = arr.some((item) => fullPath.includes(item))
         }
         return excluded
       }

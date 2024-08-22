@@ -33,16 +33,16 @@ function matchPathname(soruce: string | RegExp, target: string) {
 
 export function normalizeIncluded(param: Options['included']) {
   if (typeof param === 'string' || param instanceof RegExp) {
-    return (absolutePath: string) => matchPathname(param, absolutePath)
+    return (fullPath: string) => matchPathname(param, fullPath)
   }
   if (Array.isArray(param)) {
-    return (absolutePath: string) => param.some(item => matchPathname(item, absolutePath))
+    return (fullPath: string) => param.some(item => matchPathname(item, fullPath))
   }
   if (typeof param === 'function') {
     return param
   }
-  return (absolutePath: string) => {
-    return ignorePathReg.test(absolutePath)
+  return (fullPath: string) => {
+    return ignorePathReg.test(fullPath)
   }
 }
 
@@ -65,7 +65,8 @@ export function normalizeText(param: Options['text']) {
   if (typeof param === 'function') {
     return param
   }
-  return (absolutePath: string, lastPathname: string) => {
+  return (fileInfo: FileInfo) => {
+    const lastPathname = fileInfo.filename
     return lastPathname.replace(/\.[mM][dD]$/, '')
   }
 }
@@ -75,9 +76,9 @@ export function normalizeCollapsed(param: Options['collapsed']) {
     return param
   }
   if (typeof param === 'boolean') {
-    return () => param
+    return (fileInfo: FileInfo) => param
   }
-  return () => void 0
+  return (fileInfo: FileInfo) => void 0
 }
 
 export function normalizeUsedFor(param: Options['usedFor']) {
@@ -93,7 +94,8 @@ export function normalizeUsedFor(param: Options['usedFor']) {
       }
     }
   }
-  return (absolutePath: string, parents: FileInfo[], children: string[]) => {
+  return (fileInfo: FileInfo) => {
+    const parents = fileInfo.parents ?? []
     if (parents.length === 0) {
       return { nav: false, sidebar: false }
     }
@@ -108,7 +110,7 @@ export function normalizeOptions(options: Options): NormalizeOptions {
   const userOptions: NormalizeOptions = {
     genType: normalizeGenType(options.genType),
     included: normalizeIncluded(options.included),
-    excluded: (absolutePath: string) => !normalizeIncluded(options.included)(absolutePath),
+    excluded: (fullPath: string) => !normalizeIncluded(options.included)(fullPath),
     useContent: !!options.useContent,
     sort: normalizeSort(options.sort),
     text: normalizeText(options.text),

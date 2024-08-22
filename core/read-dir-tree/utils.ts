@@ -1,90 +1,104 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { Options, ErrorItem, FileInfo } from './types'
+import { DirTreeOptions, ErrorItem, FileInfo, ProcessError, WithFileInfo, DirTreeItem } from './types'
 
-export function handleError(
-  errors: ErrorItem[],
-  error: Error,
-  type: 'readdir' | 'stat',
-  path: string,
-  mode: Options['processReadDirError'] | Options['processStatsError'] = 'ignore',
-) {
+export function handleError(errors: ErrorItem[], error: Error, type: 'readdir' | 'stat', path: string, mode: ProcessError = 'ignore',) {
   switch (mode) {
-    case 'ignore':
-      break
-    case 'throw':
-      throw error
-    case 'record':
-      errors.push({ error, path, type })
-      break
+    case 'ignore': break
+    case 'throw': throw error
+    case 'record': errors.push({ error, path, type }); break
+    default: break
   }
 }
 
-export function defineFileInfo<T extends Record<string, any>>(o: T, fileInfo: Partial<FileInfo>) {
-  const map = Object.keys(fileInfo).reduce((acc, key) => {
-    acc[key] = {
+export function defineFileInfo<T extends WithFileInfo>(o: T, fileInfo: Partial<FileInfo>): T {
+  const __fileInfo__: Partial<FileInfo> = { ...o.__fileInfo__ };
+
+  Object.keys(fileInfo).forEach((key) => {
+    Object.defineProperty(__fileInfo__, key, {
       value: fileInfo[key],
-      writable: false,
       enumerable: true,
-      configurable: false
-    }
-    return acc
-  }, {})
-  return Object.defineProperties(o, map) as unknown as FileInfo
+      configurable: true,
+      writable: false,
+    })
+  })
+  return Object.defineProperty(o, '__fileInfo__', {
+    value: __fileInfo__,
+    enumerable: true,
+    configurable: true,
+    writable: false,
+  })
 }
 
-export function createDefaultOptions<T extends FileInfo>(options?: Options<T>): Required<Options<T>> {
+export function createDefaultOptions<
+  ChildKey extends string,
+  T extends DirTreeItem<ChildKey>
+>(options?: DirTreeOptions<ChildKey, T>): Required<DirTreeOptions<ChildKey, T>> {
 
-  function onStats(absolutePath: string, filename: string, stats: fs.Stats, parents: T[]) {
-    let postStats = {}
+  const childKey = options?.childKey || 'children'
+
+  function onStats(fullPath: string, filename: string, stats: fs.Stats, parents: T[]) {
+    let postStats = {} as T;
     if (options && typeof options.onStats === 'function') {
-      postStats = options.onStats(absolutePath, filename, stats, parents)
+      postStats = options.onStats(fullPath, filename, stats, parents) || postStats
     }
     return defineFileInfo(postStats, {
-      __stats__: stats,
-      __fullpath__: absolutePath,
-      __filename__: filename,
-      __children__: [],
-      __parents__: parents
-    }) as T
+      stats: stats,
+      fullpath: fullPath,
+      filename: filename,
+      children: [],
+      parents: parents.map((item) => item.__fileInfo__),
+    })
   }
 
-  function onReadDir(absolutePath: string, filename: string, postStats: T, parents: T[], childFiles: string[]) {
+  function onReadDir(fullPath: string, filename: string, postStats: T, parents: T[], childFiles: string[]) {
     let result = Object.assign({}, postStats)
     if (options && typeof options.onReadDir === 'function') {
-      result = options.onReadDir(absolutePath, filename, postStats, parents, childFiles)
+      result = options.onReadDir(fullPath, filename, postStats, parents, childFiles) || result
     }
+    result = { ...result, [childKey]: [] }
     return defineFileInfo(result, {
-      __stats__: postStats.__stats__,
-      __fullpath__: absolutePath,
-      __filename__: filename,
-      __children__: childFiles,
-      __parents__: parents
-    }) as T
+      stats: postStats.__fileInfo__.stats,
+      fullpath: fullPath,
+      filename: filename,
+      children: childFiles,
+      parents: parents.map((item) => item.__fileInfo__),
+    })
   }
 
-  const defaultOptions: Options<T> = {
-    isSkip: (absolutePath: string, filename: string, stats: fs.Stats, parents: T[]) => false,
+  const defaultOptions: DirTreeOptions<ChildKey, T> = {
+    isSkip: (fullPath: string, filename: string, stats: fs.Stats, parents: T[]) => false,
     processStatsError: 'ignore',
     processReadDirError: 'ignore',
     onStats,
     onReadDir,
-    onChildren: (absolutePath: string, filename: string, postStats: T, parents: T[], childFiles: string[], children: T[]) => children,
+    onChildren: (
+      fullPath: string,
+      filename: string,
+      postStats: T,
+      parents: T[],
+      childFiles: string[],
+      children: T[]
+    ) => children,
     onComplete: (result: T, errors: ErrorItem[]) => { },
-    childKey: 'children'
+    childKey: 'children' as ChildKey
   }
 
-  return (options ? { ...defaultOptions, ...options, onStats, onReadDir } : defaultOptions) as Required<Options<T>>
+  return (options ? { ...defaultOptions, ...options, onStats, onReadDir } : defaultOptions) as Required<DirTreeOptions<ChildKey, T>>
 }
 
-export function handleDone<T extends FileInfo>(options: Required<Pick<Options<T>, 'onChildren'>> & {
+export function handleDone<
+  ChildKey extends string,
+  T extends DirTreeItem<ChildKey>
+>(options: {
+  onChildren: Required<DirTreeOptions<ChildKey, T>>['onChildren'],
   dir: string,
-  done: (result: T) => void,
-  result: T,
-  childKey: string,
+  postStats: T,
   parents: T[],
   files: string[],
-  postStats: T
+  done: (result: T) => void,
+  result: T,
+  childKey: ChildKey,
 }) {
   const { onChildren, dir, postStats, parents, files, result, childKey, done } = options
   const children = onChildren(dir, path.basename(dir), postStats, parents, files, result[childKey])

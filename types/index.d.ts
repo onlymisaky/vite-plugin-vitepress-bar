@@ -34,11 +34,11 @@ export interface Options {
   /**
    * 指定需要生成 `nav` 和 `sidebar` 的目录，默认值为 `srcDir` ，并排除该目录 `.vitepress`、`.git`、`node_modules`、`dist` 目录。优先级高于 `excluded`
    */
-  included: string | string[] | RegExp | RegExp[] | ((absolutePath: string) => boolean);
+  included: string | string[] | RegExp | RegExp[] | ((fullPath: string) => boolean);
   /**
    * 指定需要排除的目录，默认值为 `srcExclude` +  `.vitepress`、`.git`、`node_modules`、`dist` 目录。优先级低于 `included`
    */
-  excluded: string | string[] | RegExp | RegExp[] | ((absolutePath: string) => boolean);
+  excluded: string | string[] | RegExp | RegExp[] | ((fullPath: string) => boolean);
   /**
    * 在自定义排序或自定义标题时，如果需要依赖文件内容，可以设置为 `true` ，但这可能会极大的延长启动和更新时间，默认值为 `false`
    */
@@ -50,24 +50,24 @@ export interface Options {
   /**
    * 根据文件名、创建时间、修改时间、文件大小、文件内容生成标题，默认以文件名为标题
    */
-  text: (absolutePath: string, lastPathname: string) => string;
+  text: (fileInfo: FileInfo) => string;
   /**
    * 同 `SidebarItem.collapsed`
    */
-  collapsed: boolean | ((absolutePath: string) => boolean | void);
+  collapsed: boolean | ((fileInfo: FileInfo) => boolean | void);
   /**
    * 配置当前的 `bar` 用于 `nav` 还是 `sidebar` 
    * 默认一级目录(不包含文件)为 `nav` ，二级目录为 `sidebar`
    * 
    */
-  usedFor: { nav?: boolean; sidebar?: boolean } | ((absolutePath: string, parents: FileInfo[], children: string[]) => { nav?: boolean; sidebar?: boolean });
+  usedFor: { nav?: boolean; sidebar?: boolean } | ((fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean });
 }
 
 export interface NormalizeOptions extends Options {
-  included: ((absolutePath: string) => boolean);
-  excluded: ((absolutePath: string) => boolean);
+  included: ((fullPath: string) => boolean);
+  excluded: ((fullPath: string) => boolean);
   sort: (a: SortItem, b: SortItem) => number;
-  text: (absolutePath: string, lastPathname: string) => string;
-  collapsed: (absolutePath: string) => boolean | void;
-  usedFor: (absolutePath: string, parents: FileInfo[], children: string[]) => { nav?: boolean; sidebar?: boolean };
+  text: (fileInfo: FileInfo) => string;
+  collapsed: (fileInfo: FileInfo) => boolean | void;
+  usedFor: (fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean };
 }
