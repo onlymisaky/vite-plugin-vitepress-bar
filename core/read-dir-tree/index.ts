@@ -50,7 +50,7 @@ function walk<
             handleDoneParam.parents = [...parents, readDirResult]
             handleDone(handleDoneParam)
           }
-          return;
+          return
         }
 
         const childPostStats = onStats(childDir, file, stats, [...parents, readDirResult])

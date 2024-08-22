@@ -2,7 +2,7 @@ type TreeItem<K extends string = 'children'> = {
   [P in K]?: TreeItem<K>[]
 } & Record<string, any>
 
-export interface RepeatTreeOptions<K extends string, T> {
+interface RepeatTreeOptions<K extends string, T> {
   idKey: keyof T,
   pIdKey: keyof T,
   childKey: K,

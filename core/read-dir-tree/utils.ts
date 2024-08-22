@@ -12,7 +12,7 @@ export function handleError(errors: ErrorItem[], error: Error, type: 'readdir' |
 }
 
 export function defineFileInfo<T extends WithFileInfo>(o: T, fileInfo: Partial<FileInfo>): T {
-  const __fileInfo__: Partial<FileInfo> = { ...o.__fileInfo__ };
+  const __fileInfo__: Partial<FileInfo> = { ...o.__fileInfo__ }
 
   Object.keys(fileInfo).forEach((key) => {
     Object.defineProperty(__fileInfo__, key, {
@@ -38,7 +38,7 @@ export function createDefaultOptions<
   const childKey = options?.childKey || 'children'
 
   function onStats(fullPath: string, filename: string, stats: fs.Stats, parents: T[]) {
-    let postStats = {} as T;
+    let postStats = {} as T
     if (options && typeof options.onStats === 'function') {
       postStats = options.onStats(fullPath, filename, stats, parents) || postStats
     }

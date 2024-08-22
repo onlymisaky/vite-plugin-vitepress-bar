@@ -33,7 +33,7 @@ export function createBar(filepath, options: NormalizeOptions): Promise<{
       isSkip: (dir, filename, stats, parents) => !isNeedProcess(dir, options),
       childKey: 'items',
       onStats: (dir, filename, stats, parents) => {
-        const postStats = {} as DirTreeItem;
+        const postStats = {} as DirTreeItem
         if (options.useContent) {
           readContent(stats, postStats, dir, readContentPromises)
         }
@@ -47,7 +47,7 @@ export function createBar(filepath, options: NormalizeOptions): Promise<{
       },
       onComplete(result, errors) {
         if (errors.length) {
-          console.log(errors);
+          console.log(errors)
         }
         Promise.all(readContentPromises).then(() => {
           resolve(genSilderbarAndNav(result, options))

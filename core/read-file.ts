@@ -1,10 +1,10 @@
 import * as fs from 'fs'
 
 export function readFile(filePath: string, encoding: BufferEncoding = 'utf-8') {
-  let resolve, reject;
+  let resolve, reject
   const promise = new Promise<string>((res, rej) => {
-    resolve = res;
-    reject = rej;
+    resolve = res
+    reject = rej
   })
 
   let data = ''
