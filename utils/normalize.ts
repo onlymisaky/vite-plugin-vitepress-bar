@@ -66,8 +66,13 @@ export function normalizeText(param: Options['text']) {
     return param
   }
   return (fileInfo: FileInfo) => {
-    const lastPathname = fileInfo.filename
-    return lastPathname.replace(/\.[mM][dD]$/, '')
+    const { filename, parents } = fileInfo
+    const parent = parents[parents.length - 1]
+    if (filename.toLowerCase() === 'index.md' && parent) {
+      const lastPathname = parent.filename
+      return lastPathname.replace(/\.[mM][dD]$/, '')
+    }
+    return filename.replace(/\.[mM][dD]$/, '')
   }
 }
 
@@ -78,10 +83,10 @@ export function normalizeCollapsed(param: Options['collapsed']) {
   if (typeof param === 'boolean') {
     return (fileInfo: FileInfo) => param
   }
-  return (fileInfo: FileInfo) => void 0
+  return (fileInfo: FileInfo) => true
 }
 
-export function normalizeUsedFor(param: Options['usedFor']) {
+export function normalizeGenFor(param: Options['genFor']) {
   if (typeof param === 'function') {
     return param
   }
@@ -115,7 +120,7 @@ export function normalizeOptions(options: Options): NormalizeOptions {
     sort: normalizeSort(options.sort),
     text: normalizeText(options.text),
     collapsed: normalizeCollapsed(options.collapsed),
-    usedFor: normalizeUsedFor(options.usedFor)
+    genFor: normalizeGenFor(options.genFor)
   }
   return userOptions
 }

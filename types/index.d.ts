@@ -60,7 +60,7 @@ export interface Options {
    * 默认一级目录(不包含文件)为 `nav` ，二级目录为 `sidebar`
    * 
    */
-  usedFor: { nav?: boolean; sidebar?: boolean } | ((fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean });
+  genFor: { nav?: boolean; sidebar?: boolean } | ((fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean });
 }
 
 export interface NormalizeOptions extends Options {
@@ -69,5 +69,5 @@ export interface NormalizeOptions extends Options {
   sort: (a: SortItem, b: SortItem) => number;
   text: (fileInfo: FileInfo) => string;
   collapsed: (fileInfo: FileInfo) => boolean | void;
-  usedFor: (fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean };
+  genFor: (fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean };
 }

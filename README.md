@@ -65,7 +65,7 @@ export default defineConfig({
 - 说明: 同 `SidebarItem.collapsed`
 - 类型: `boolean` | `(fullPath: string) => boolean`
 
-### usedFor
+### genFor
 
 - 说明: 配置当前的 `bar` 用于 `nav` 还是 `sidebar` 。默认一级目录(不包含文件)为 `nav` ，二级目录为 `sidebar` ，也可以通过函数配置
 - 类型: `{ nav: boolean, sidebar: boolean }` | `(fileInfo: { stats: fs.Stats, fullpath: string, filename: string, children: string[], parents: any[], content: string}) => { nav: boolean, sidebar: boolean }`
