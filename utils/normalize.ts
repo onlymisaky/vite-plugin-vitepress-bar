@@ -1,5 +1,6 @@
-import { Bar, NormalizeOptions, Options } from '../types/index'
+import fg from 'fast-glob'
 import { FileInfo } from '../core/read-dir-tree/types'
+import { Bar, NormalizeOptions, Options } from '../types/index'
 
 export function normalizeGenType(param: Options['genType']): Options['genType'] {
   if (typeof param === 'function') {
@@ -19,17 +20,19 @@ export function normalizeGenType(param: Options['genType']): Options['genType'] 
   }
 }
 
-const ignorePathReg = /^(?!.*(?:\.vitepress|\.git|node_modules|dist)).*$/
-
 function matchPathname(soruce: string | RegExp, target: string) {
   if (typeof soruce === 'string') {
-    return soruce === target
+    const matchedFiles = fg.sync(soruce)
+    const resule = matchedFiles.some((file) => target.endsWith(file))
+    return resule
   }
   if (soruce instanceof RegExp) {
     return soruce.test(target)
   }
   return false
 }
+
+const ignorePathReg = /^(?!.*(?:\/\.vitepress(?:\/|$)|\/\.git(?:\/|$)|\/node_modules(?:\/|$)|\/dist(?:\/|$))).*$/
 
 export function normalizeIncluded(param: Options['included']) {
   if (typeof param === 'string' || param instanceof RegExp) {
@@ -43,6 +46,21 @@ export function normalizeIncluded(param: Options['included']) {
   }
   return (fullPath: string) => {
     return ignorePathReg.test(fullPath)
+  }
+}
+
+export function normalizeExcluded(param: Options['excluded']) {
+  if (typeof param === 'string' || param instanceof RegExp) {
+    return (fullPath: string) => matchPathname(param, fullPath)
+  }
+  if (Array.isArray(param)) {
+    return (fullPath: string) => param.some(item => matchPathname(item, fullPath))
+  }
+  if (typeof param === 'function') {
+    return param
+  }
+  return (fullPath: string) => {
+    return !ignorePathReg.test(fullPath)
   }
 }
 
@@ -115,7 +133,7 @@ export function normalizeOptions(options: Options): NormalizeOptions {
   const userOptions: NormalizeOptions = {
     genType: normalizeGenType(options.genType),
     included: normalizeIncluded(options.included),
-    excluded: (fullPath: string) => !normalizeIncluded(options.included)(fullPath),
+    excluded: normalizeExcluded(options.excluded),
     useContent: !!options.useContent,
     sort: normalizeSort(options.sort),
     text: normalizeText(options.text),

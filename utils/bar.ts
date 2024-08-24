@@ -1,8 +1,8 @@
 import path from 'path'
 import { DefaultTheme } from 'vitepress'
-import { Bar, NormalizeOptions } from '../types'
 import { DirTreeItem, FileInfo } from '../core/read-dir-tree/types'
 import { repeatTree } from '../core/repeat-tree'
+import { Bar, NormalizeOptions } from '../types'
 import { sort } from './sort'
 
 interface BarItem {

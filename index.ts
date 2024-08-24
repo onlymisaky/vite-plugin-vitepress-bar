@@ -1,9 +1,9 @@
 import fg from 'fast-glob'
 import { Plugin } from 'vite'
-import { UserConfig, Options } from './types/index'
+import { Options, UserConfig } from './types/index'
 import { createBar } from './utils'
-import { normalizeOptions } from './utils/normalize'
 import { debounceCheckRestart } from './utils/check-restart'
+import { normalizeOptions } from './utils/normalize'
 
 export default (options?: Partial<Options>) => {
 
@@ -16,15 +16,18 @@ export default (options?: Partial<Options>) => {
       const vitepress = viteConfig.vitepress
       const { srcDir, userConfig: _userConfig, rewrites } = vitepress
       const { srcExclude } = _userConfig
-      const _excluded = userConfig.excluded
+      const excludedFn = userConfig.excluded
       userConfig.excluded = (fullPath: string) => {
-        let excluded = _excluded(fullPath)
+        if (fullPath === srcDir) {
+          return false
+        }
+        let excluded = excludedFn(fullPath)
         if (excluded) {
           return excluded
         }
         if (srcExclude) {
-          const arr = fg.globSync(srcExclude)
-          excluded = arr.some((item) => fullPath.includes(item))
+          const matchedFiles = fg.sync(srcExclude)
+          excluded = matchedFiles.some((item) => fullPath.endsWith(item))
         }
         return excluded
       }
