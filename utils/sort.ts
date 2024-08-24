@@ -22,14 +22,14 @@ export function sort<T extends WithFileInfo>(children: T[], options: NormalizeOp
       const itemA: FileInfo = { ...a.__fileInfo__, ...normalFileInfo }
       const itemB: FileInfo = { ...b.__fileInfo__, ...normalFileInfo }
       const sortA: SortItem = {
-        name: itemA.filename,
+        fullpath: itemA.fullpath,
         create: itemA.stats.ctime.getTime() + '',
         modify: itemA.stats.mtime.getTime() + '',
         size: itemA.stats.size + '',
         content: itemA.content || '',
       }
       const sortB: SortItem = {
-        name: itemB.filename,
+        fullpath: itemB.fullpath,
         create: itemB.stats.ctime.getTime() + '',
         modify: itemB.stats.mtime.getTime() + '',
         size: itemB.stats.size + '',

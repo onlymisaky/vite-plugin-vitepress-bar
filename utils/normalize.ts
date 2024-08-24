@@ -1,6 +1,6 @@
 import fg from 'fast-glob'
 import { FileInfo } from '../core/read-dir-tree/types'
-import { Bar, NormalizeOptions, Options } from '../types/index'
+import { Bar, NormalizeOptions, Options, SortItem } from '../types/index'
 
 export function normalizeGenType(param: Options['genType']): Options['genType'] {
   if (typeof param === 'function') {
@@ -66,7 +66,7 @@ export function normalizeExcluded(param: Options['excluded']) {
 
 export function normalizeSort(param: Options['sort']) {
   if (param && typeof param === 'object' && param.by) {
-    return (a, b) => {
+    return (a: SortItem, b: SortItem) => {
       const { order, by } = param
       const _a = a[by]
       const _b = b[by]

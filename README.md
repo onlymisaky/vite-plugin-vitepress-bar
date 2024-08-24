@@ -30,42 +30,141 @@ export default defineConfig({
 
 ## API
 
-### genType
-
-- 说明: 生成的 `bar` 与原有的 `themeConfig.nav `和 `themeConfig.sidebar` 生成新的 `bar` ，默认替换原有的 `bar`
-- 类型: (source: { sidebar, nav }, target: { sidebar, nav }) => { sidebar, nav }
-
 ### included
 
-- 说明: 指定需要生成 `nav` 和 `sidebar` 的目录，默认值为 `srcDir` ，并排除该目录 `.vitepress`、`.git`、`node_modules`、`dist` 目录。优先级高于 `excluded`
-- 类型: `string` | `string[]` | `RegExp` | `RegExp[]` | `(fullPath: string) => boolean`
+- 说明
+  - 指定可以在 `nav` 和 `sidebar` 中显示的文件或目录
+  - 继承自 `srcDir` 配置项，既只有能被 `vitepress` 读取到才会被读取
+  - 如果是个空文件夹，将不会显示
+  - 优先级高于 `excluded`
+- 类型
+  - `string`
+  - `string[]`
+  - `RegExp`
+  - `RegExp[]`
+  - `(fullPath: string) => boolean`
 
 ### excluded
 
-- 说明: 指定需要排除的目录，默认值为 `srcExclude` +  `.vitepress`、`.git`、`node_modules`、`dist` 目录。优先级低于 `included`
-- 类型: `string` | `string[]` | `RegExp` | `RegExp[]` | `(fullPath: string) => boolean`
+- 说明
+  - 指定不在 `nav` 和 `sidebar` 中显示的文件或目录(这意味着只有知道该链接存在的人才能访问，恶意穷举除外)
+  - 继承自 `srcExclude` 配置项，既 `vitepress` 排除的目录也会被排除
+  - 优先级低于 `included`
+- 类型
+  - `string`
+  - `string[]`
+  - `RegExp`
+  - `RegExp[]`
+  - `(fullPath: string) => boolean`
 
 ### useContent
 
-- 说明: 在自定义排序或自定义标题时，如果需要依赖文件内容，可以设置为 `true` ，但这可能会极大的延长启动和更新时间，默认值为 `false`
-- 类型: `boolean`
+- 说明
+  - 在自定义排序和自定义标题时，如果需要依赖文件内容，可以设置为 `true` 
+  - 这将会延长启动、更新和构建时间
+- 类型
+  - `boolean`
 
 ### sort
 
-- 说明: 对同级的 `bar` 进行排序，根据文件信息(文件名、创建时间、修改时间、文件大小、文件内容)排序，默认使用 node 读取到的文件顺序
-- 类型: `{ order: 'asc' | 'desc', by: 'name' | 'create' | 'modify' | 'size' | 'content' }` | `(a: File, b: File) => number`
+- 说明
+  - 对同级的 `bar` 进行排序
+  - 根据文件信息(文件名、创建时间、修改时间、文件大小、文件内容)排序
+  - 默认使用 node 读取到的文件顺序
+- 类型
+  - `SortOptions`
+  - `(a: SortItem, b: SortItem) => number`
 
 ### text
 
-- 说明: 根据文件名、创建时间、修改时间、文件大小、文件内容生成标题，默认以文件名为标题
-- 类型: `(fullPath: string, lastPathname: string) => string`
+- 说明
+  - 根据文件名、创建时间、修改时间、文件大小、文件内容生成标题
+  - 默认以文件名为标题
+- 类型
+  - `(fileInfo: FileInfo) => string`
 
 ### collapsed
 
-- 说明: 同 `SidebarItem.collapsed`
-- 类型: `boolean` | `(fullPath: string) => boolean`
+- 说明
+  - 同 `SidebarItem.collapsed`
+- 类型
+  - `boolean`
+  - `(fullPath: string) => boolean`
 
 ### genFor
 
-- 说明: 配置当前的 `bar` 用于 `nav` 还是 `sidebar` 。默认一级目录(不包含文件)为 `nav` ，二级目录为 `sidebar` ，也可以通过函数配置
-- 类型: `{ nav: boolean, sidebar: boolean }` | `(fileInfo: { stats: fs.Stats, fullpath: string, filename: string, children: string[], parents: any[], content: string}) => { nav: boolean, sidebar: boolean }`
+- 说明
+  - 配置当前文件或目录显示在 `nav` 还是 `sidebar` 中
+  - 默认 `srcDir` 下一级文件和目录在 `nav` 中显示，二级目录在 `sidebar` 中显示
+- 类型
+  - `{ nav?: boolean; sidebar?: boolean }`
+  - `(fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean }`
+
+### genType
+
+- 说明
+  - 配置本插件生成的 `bar` 与原有的 `themeConfig.nav `和 `themeConfig.sidebar` 合并方式
+  - 默认替换原有的 `themeConfig.nav `和 `themeConfig.sidebar`
+  - 如果该函数了返回的 `nav` 和 `sidebar` 格式错误，则保持原有的 `themeConfig.nav `和 `themeConfig.sidebar`
+- 类型
+  - `(source: Bar, target: Bar) => Bar`
+
+## 类型说明
+
+### SortItem
+
+```ts
+export interface SortItem {
+  /**
+   * 完整路径
+   */
+  fullpath: string;
+  /**
+   * 文件内容
+   */
+  content: string;
+  /**
+   * 创建时间
+   */
+  create: string;
+  /**
+   * 修改时间
+   */
+  modify: string;
+  /**
+   * 文件大小
+   */
+  size: string;
+}
+```
+
+### SortOptions
+
+```ts
+export interface SortOptions {
+  order: 'asc' | 'desc';
+  by: keyof SortItem;
+}
+```
+
+### Bar
+
+```ts
+interface Bar {
+  sidebar: DefaultTheme.Sidebar;
+  nav: DefaultTheme.NavItem[];
+}
+```
+
+### FileInfo
+
+```ts
+export interface FileInfo {
+  stats: fs.Stats,
+  fullpath: string,
+  filename: string,
+  children: string[],
+  parents: FileInfo[]
+  content: string
+}
+```
