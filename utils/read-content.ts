@@ -1,19 +1,28 @@
 import * as fs from 'fs'
 import { readFile } from '../core/read-file'
-import { defineFileInfo } from '../core/read-dir-tree/utils'
-import { WithFileInfo } from '../core/read-dir-tree/types'
+import { BarItem } from '../types'
 
-export function readContent<T extends WithFileInfo>(stats: fs.Stats, postStats: T, dir: string, promises: Promise<string>[]) {
-  if (stats.isFile()) {
-    const ps = readFile(dir).then((content) => {
-      defineFileInfo(postStats, { content: content })
-      return content
-    }).catch((err) => {
-      defineFileInfo(postStats, { content: '' })
-      return ''
-    })
+export function readContent(
+  stat: fs.Stats,
+  bar: BarItem,
+  dir: string,
+  promises: Promise<string>[],
+  resultMap: Record<string, string | Error>
+) {
+  if (stat.isFile()) {
+    const ps = readFile(dir)
+      .then((content) => {
+        bar.content = content
+        resultMap[dir] = content
+        return content
+      })
+      .catch((err) => {
+        resultMap[dir] = err
+        return ''
+      })
     promises.push(ps)
   } else {
-    defineFileInfo(postStats, { content: '' })
+    bar.content = ''
+    resultMap[dir] = ''
   }
 }

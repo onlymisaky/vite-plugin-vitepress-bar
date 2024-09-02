@@ -60,7 +60,7 @@ export default defineConfig({
 ### useContent
 
 - 说明
-  - 在自定义排序和自定义标题时，如果需要依赖文件内容，可以设置为 `true` 
+  - 在自定义排序和自定义标题时，如果需要依赖文件内容，可以设置为 `true`
   - 这将会延长启动、更新和构建时间
 - 类型
   - `boolean`
@@ -96,6 +96,7 @@ export default defineConfig({
 - 说明
   - 配置当前文件或目录显示在 `nav` 还是 `sidebar` 中
   - 默认 `srcDir` 下一级文件和目录在 `nav` 中显示，二级目录在 `sidebar` 中显示
+  - 如果出现跨级的情况，则会寻找最近的上级节点，将其加入到该节点的 `items` 中。例如有 `docs/pkg/api/todo.md` 这样一个文件，希望 `pkg` 在 `nav` 中显示，`api` 在 `sidebar` 中展示， `todo` 在 `nav` 显示，则 `todo`  会显示在 `pkg` 下面
 - 类型
   - `{ nav?: boolean; sidebar?: boolean }`
   - `(fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean }`
@@ -103,11 +104,15 @@ export default defineConfig({
 ### genType
 
 - 说明
-  - 配置本插件生成的 `bar` 与原有的 `themeConfig.nav `和 `themeConfig.sidebar` 合并方式
-  - 默认替换原有的 `themeConfig.nav `和 `themeConfig.sidebar`
+  - 本插件会根据上述配置生成 `nav` 和 `sidebar` 两个数组，再根据结果将 `silder` 转换为 `map` 结构：
+  	- 如果 `sidebar` 的第一层在 `nav` 的第一层可以找到上级节点（(跨级别也算上级节点)，则将该 `sidebarItem` 放在 key 为 `navItme.link` 下方
+  	- 如果存在无法找到上级节点的，则会放在 key 为 `\` 下方
+  	- 最后将将原有原有的 `themeConfig.nav `和 `themeConfig.sidebar` 替换为本插件生成的 `nav` 和 `sidebar`
+  - 如果想要生成其他格式，或者想与原有配置做合并处理，可传入该参数处
   - 如果该函数了返回的 `nav` 和 `sidebar` 格式错误，则保持原有的 `themeConfig.nav `和 `themeConfig.sidebar`
+  
 - 类型
-  - `(source: Bar, target: Bar) => Bar`
+  - `(sourceBar: Bar, genBar: Bar) => Bar`
 
 ## 类型说明
 
@@ -151,7 +156,7 @@ export interface SortOptions {
 
 ```ts
 interface Bar {
-  sidebar: DefaultTheme.Sidebar;
+  sidebar: DefaultTheme.SidebarItem[];
   nav: DefaultTheme.NavItem[];
 }
 ```
@@ -163,8 +168,8 @@ export interface FileInfo {
   stats: fs.Stats,
   fullpath: string,
   filename: string,
-  children: string[],
-  parents: FileInfo[]
   content: string
+  files: string[],
+  parents: FileInfo[]
 }
 ```

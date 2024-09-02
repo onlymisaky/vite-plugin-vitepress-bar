@@ -6,8 +6,6 @@ export interface UserConfig extends ViteUserConfig {
   vitepress: VitepressUserConfig<DefaultTheme.Config> & SiteConfig
 }
 
-export interface VitePluginOptions extends Plugin { }
-
 export interface SortItem {
   /**
    * 完整路径
@@ -37,7 +35,7 @@ export interface SortOptions {
 }
 
 interface Bar {
-  sidebar: DefaultTheme.Sidebar;
+  sidebar: DefaultTheme.SidebarItem[];
   nav: DefaultTheme.NavItem[];
 }
 
@@ -84,11 +82,14 @@ export interface Options {
    */
   genFor: { nav?: boolean; sidebar?: boolean } | ((fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean });
   /**
-   * 配置本插件生成的 `bar` 与原有的 `themeConfig.nav `和 `themeConfig.sidebar` 合并方式
-   * 默认替换原有的 `themeConfig.nav `和 `themeConfig.sidebar`
-   * 如果该函数了返回的 `nav` 和 `sidebar` 格式错误，则保持原有的 `themeConfig.nav `和 `themeConfig.sidebar`
+   * - 本插件会根据上述配置生成 `nav` 和 `sidebar` 两个数组，再根据结果将 `silder` 转换为 `map` 结构：
+   *  - 如果 `sidebar` 的第一层在 `nav` 的第一层可以找到上级节点（(跨级别也算上级节点)，则将该 `sidebarItem` 放在 key 为 `navItme.link` 下方
+   *  - 如果存在无法找到上级节点的，则会放在 key 为 `\` 下方
+   *  - 最后将将原有原有的 `themeConfig.nav `和 `themeConfig.sidebar` 替换为本插件生成的 `nav` 和 `sidebar`
+   * - 如果想要生成其他格式，或者想与原有配置做合并处理，可传入该参数处
+   * - 如果该函数了返回的 `nav` 和 `sidebar` 格式错误，则保持原有的 `themeConfig.nav `和 `themeConfig.sidebar`
    */
-  genType: (source: Bar, target: Bar) => Bar;
+  genType: (sourceBar: Bar, genBar: Bar) => Bar;
 }
 
 export interface NormalizeOptions extends Options {
@@ -97,5 +98,12 @@ export interface NormalizeOptions extends Options {
   sort: (a: SortItem, b: SortItem) => number;
   text: (fileInfo: FileInfo) => string;
   collapsed: (fileInfo: FileInfo) => boolean | void;
-  genFor: (fileInfo: FileInfo) => { nav?: boolean; sidebar?: boolean };
+  genFor: (fileInfo: FileInfo) => { nav: boolean; sidebar: boolean };
+}
+export interface BarItem {
+  text: string
+  link: string
+  items?: BarItem[]
+  content?: string
+  fileInfo: FileInfo
 }

@@ -1,19 +1,29 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { DirTreeOptions, ErrorItem, DirTreeItem } from './types'
-import { handleError, createDefaultOptions, handleDone } from './utils'
+import { Tree } from '../../types/shared'
+import { ErrorItem, FileInfo, ReadDirTreeOptions, WalkOptions } from './types'
+import { handleDone, handleError, normalizeWalkOptions } from './utils'
 
 function walk<
-  ChildKey extends string,
-  T extends DirTreeItem<ChildKey>
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
 >(
   dir: string,
-  postStats: T,
-  parents: T[],
+  stat: fs.Stats,
+  parents: Tree<K, R>[],
   errors: ErrorItem[],
-  options: Required<Omit<DirTreeOptions<ChildKey, T>, 'onComplete'>> & { done: (result: T) => void },
+  options: WalkOptions<K, T, R>,
 ) {
-  const { isSkip, processStatsError, processReadDirError, onReadDir, onStats, onChildren, childKey, done } = options
+  const {
+    processStatError,
+    processReadDirError,
+    isSkip,
+    onRead,
+    onChildren,
+    childKey,
+    done
+  } = options
 
   fs.readdir(dir, (readDirError, files) => {
     if (readDirError) {
@@ -21,68 +31,67 @@ function walk<
       return
     }
     let count = files.length
-    const readDirResult = onReadDir(dir, path.basename(dir), postStats, parents, files)
+    const readResult = onRead(dir, path.basename(dir), stat, parents, files)
 
-    const handleDoneParam: Parameters<typeof handleDone>[0] = {
+    const handleDoneParams: Parameters<typeof handleDone<K, T, R>>[0] = {
       dir,
-      postStats,
+      stat,
+      readResult,
       parents: [],
       files,
-      result: readDirResult,
       childKey,
-      onChildren: onChildren as unknown as Parameters<typeof handleDone>[0]['onChildren'],
-      done: done as unknown as Parameters<typeof handleDone>[0]['done'],
+      onChildren,
+      done: done,
     }
 
     if (count === 0) {
-      handleDoneParam.parents = [...parents]
-      handleDone(handleDoneParam)
+      handleDoneParams.parents = [...parents]
+      handleDone(handleDoneParams)
       return
     }
 
     files.forEach((file) => {
       const childDir = path.join(dir, file)
-      fs.stat(childDir, async (statError, stats) => {
+      fs.stat(childDir, (statError, stat) => {
         if (statError) {
           count--
-          handleError(errors, statError, 'stat', childDir, processStatsError)
+          handleError(errors, statError, 'stat', childDir, processStatError)
           if (count === 0) {
-            handleDoneParam.parents = [...parents, readDirResult]
-            handleDone(handleDoneParam)
+            handleDoneParams.parents = [...parents, readResult]
+            handleDone(handleDoneParams)
           }
           return
         }
 
-        const childPostStats = onStats(childDir, file, stats, [...parents, readDirResult])
-
-        if (isSkip(childDir, file, stats, [...parents, readDirResult])) {
+        if (isSkip(childDir, file, stat, [...parents, readResult])) {
           count--
           if (count === 0) {
-            handleDoneParam.parents = [...parents, readDirResult]
-            handleDone(handleDoneParam)
+            handleDoneParams.parents = [...parents, readResult]
+            handleDone(handleDoneParams)
           }
           return
         }
 
-        if (stats.isFile()) {
-          readDirResult[childKey].push(childPostStats)
+        if (stat.isFile()) {
+          const readRes = onRead(childDir, file, stat, [...parents, readResult])
+          readResult[childKey]?.push(readRes)
           count--
           if (count === 0) {
-            handleDoneParam.parents = [...parents, readDirResult]
-            handleDone(handleDoneParam)
+            handleDoneParams.parents = [...parents, readResult]
+            handleDone(handleDoneParams)
           }
           return
         }
 
-        if (stats.isDirectory()) {
-          walk(childDir, childPostStats, [...parents, readDirResult], errors, {
+        if (stat.isDirectory()) {
+          walk(childDir, stat, [...parents, readResult], errors, {
             ...options,
             done: (childResult) => {
-              readDirResult[childKey].push(childResult)
+              readResult[childKey]?.push(childResult as Tree<K, R>)
               count--
               if (count === 0) {
-                handleDoneParam.parents = [...parents, readDirResult]
-                handleDone(handleDoneParam)
+                handleDoneParams.parents = [...parents, readResult]
+                handleDone(handleDoneParams)
               }
             }
           })
@@ -94,11 +103,21 @@ function walk<
 }
 
 export function readDirTree<
-  ChildKey extends string,
-  T extends DirTreeItem<ChildKey>
->(dir: string, options?: DirTreeOptions<ChildKey, T>) {
-  const { onComplete, ...walkOptions } = createDefaultOptions(options)
-  const { onReadDir, onStats, childKey } = walkOptions
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+>(dir: string, options?: ReadDirTreeOptions<K, T, R>) {
+  let { onComplete, ...other } = {
+    onComplete: (result) => { },
+    ...options,
+  }
+
+  function done(result: Tree<K, T | R>) {
+    onComplete(result, errors)
+  }
+
+  const walkOptions = normalizeWalkOptions({ ...other, done })
+  const { onRead, isSkip } = walkOptions
 
   const errors: ErrorItem[] = []
 
@@ -107,25 +126,26 @@ export function readDirTree<
       return new Error(dir + ' not exists')
     }
 
-    fs.stat(dir, (error, stats) => {
+    fs.stat(dir, (error, stat) => {
       if (error) {
         handleError(errors, error, 'stat', dir, 'throw')
-        onComplete({} as T, errors)
+        onComplete({} as Tree<K, T | R>, errors)
         return
       }
-      const postStats = onStats(dir, path.basename(dir), stats, [])
-      if (stats.isFile()) {
-        const readDirResult = onReadDir(dir, path.basename(dir), postStats, [], [dir])
-        delete readDirResult[childKey]
-        onComplete(readDirResult, errors)
+
+      if (isSkip(dir, path.basename(dir), stat, [])) {
+        onComplete({} as Tree<K, T | R>, errors)
         return
       }
-      if (stats.isDirectory()) {
-        walk(dir, postStats, [], errors, {
-          ...walkOptions, done: (result) => {
-            onComplete(result, errors)
-          }
-        })
+
+      if (stat.isFile()) {
+        const tree = onRead(dir, path.basename(dir), stat, []) as Tree<K, T | R>
+        onComplete(tree, errors)
+        return
+      }
+
+      if (stat.isDirectory()) {
+        walk(dir, stat, [], errors, walkOptions)
       }
     })
   } catch (error) {

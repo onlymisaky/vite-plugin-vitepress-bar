@@ -33,9 +33,12 @@ export default (options?: Partial<Options>) => {
       }
       const bar = await createBar(srcDir, userConfig)
       const { themeConfig } = viteConfig.vitepress.site
-      const { nav, sidebar } = userConfig.genType({ sidebar: themeConfig.sidebar, nav: themeConfig.nav, }, bar)
-      viteConfig.vitepress.site.themeConfig.sidebar = sidebar
-      viteConfig.vitepress.site.themeConfig.nav = nav
+      const { nav, sidebar } = userConfig.genType({
+        sidebar: themeConfig.sidebar,
+        nav: themeConfig.nav,
+      }, bar)
+      themeConfig.sidebar = sidebar
+      themeConfig.nav = nav
       return config
     },
     configureServer(server) {

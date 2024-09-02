@@ -1,8 +1,23 @@
-import * as fs from 'fs'
+import { Stats } from 'fs'
 import * as path from 'path'
-import { DirTreeOptions, ErrorItem, FileInfo, ProcessError, WithFileInfo, DirTreeItem } from './types'
+import { Tree } from './../../types/shared.d'
+import {
+  ErrorItem,
+  FileInfo,
+  NormalizeOnChildren,
+  NormalizeOnRead,
+  ProcessError,
+  ReadDirTreeOptions,
+  WalkDone,
+  WalkOptions
+} from './types'
 
-export function handleError(errors: ErrorItem[], error: Error, type: 'readdir' | 'stat', path: string, mode: ProcessError = 'ignore',) {
+export function handleError(
+  errors: ErrorItem[],
+  error: Error, type: 'readdir' | 'stat',
+  path: string,
+  mode: ProcessError = 'ignore'
+) {
   switch (mode) {
     case 'ignore': break
     case 'throw': throw error
@@ -11,96 +26,116 @@ export function handleError(errors: ErrorItem[], error: Error, type: 'readdir' |
   }
 }
 
-export function defineFileInfo<T extends WithFileInfo>(o: T, fileInfo: Partial<FileInfo>): T {
-  const __fileInfo__: Partial<FileInfo> = { ...o.__fileInfo__ }
-
-  Object.keys(fileInfo).forEach((key) => {
-    Object.defineProperty(__fileInfo__, key, {
-      value: fileInfo[key],
-      enumerable: true,
-      configurable: true,
-      writable: false,
-    })
-  })
-  return Object.defineProperty(o, '__fileInfo__', {
-    value: __fileInfo__,
-    enumerable: true,
-    configurable: true,
-    writable: false,
-  })
+function normalizeIsSkip<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+>(param?: ReadDirTreeOptions<K, T, R>['isSkip']): ReadDirTreeOptions<K, T, R>['isSkip'] {
+  return function isSkip(fullpath, filename, stat, parents) {
+    let skip = false
+    if (typeof param === 'function') {
+      skip = param(fullpath, filename, stat, parents)
+    }
+    return !!skip
+  }
 }
 
-export function createDefaultOptions<
-  ChildKey extends string,
-  T extends DirTreeItem<ChildKey>
->(options?: DirTreeOptions<ChildKey, T>): Required<DirTreeOptions<ChildKey, T>> {
-
-  const childKey = options?.childKey || 'children'
-
-  function onStats(fullPath: string, filename: string, stats: fs.Stats, parents: T[]) {
-    let postStats = {} as T
-    if (options && typeof options.onStats === 'function') {
-      postStats = options.onStats(fullPath, filename, stats, parents) || postStats
+function normalizeOnRead<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+>(childKey: K, param?: ReadDirTreeOptions<K, T, R>['onRead']): NormalizeOnRead<K, T, R> {
+  return function onRead(fullpath, filename, stat, parents, files) {
+    let result: ReturnType<ReadDirTreeOptions<K, T, R>['onRead']> | undefined
+    if (typeof param === 'function') {
+      result = param(fullpath, filename, stat, parents, files)
     }
-    return defineFileInfo(postStats, {
-      stats: stats,
-      fullpath: fullPath,
-      filename: filename,
-      children: [],
-      parents: parents.map((item) => item.__fileInfo__),
-    })
-  }
-
-  function onReadDir(fullPath: string, filename: string, postStats: T, parents: T[], childFiles: string[]) {
-    let result = Object.assign({}, postStats)
-    if (options && typeof options.onReadDir === 'function') {
-      result = options.onReadDir(fullPath, filename, postStats, parents, childFiles) || result
+    if (typeof result === 'undefined') {
+      let _parents = parents as unknown as FileInfo[]
+      let fileInfo: FileInfo = { fullpath, filename, stat, parents: _parents }
+      if (stat.isDirectory()) {
+        fileInfo.files = files
+      }
+      result = fileInfo as R
     }
-    result = { ...result, [childKey]: [] }
-    return defineFileInfo(result, {
-      stats: postStats.__fileInfo__.stats,
-      fullpath: fullPath,
-      filename: filename,
-      children: childFiles,
-      parents: parents.map((item) => item.__fileInfo__),
-    })
+    if (Object.prototype.toString.call(result) !== '[object Object]') {
+      result = { value: result } as R
+    }
+    if (stat.isDirectory()) {
+      // 当 childDir 全部读取完成时，会将结果 push 到 children 中
+      const children: Tree<K, R>[] = []
+      let res: Tree<K, R> = { [childKey]: children, ...result, }
+      return res
+    }
+
+    return result as Tree<K, R>
+  }
+}
+
+function normalizeOnChildren<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+>(param?: ReadDirTreeOptions<K, T, R>['onChildren']): NormalizeOnChildren<K, T, R> {
+  return function onChildren(fullpath, filename, stat, readResult, parents, files, children) {
+    let result: ReturnType<ReadDirTreeOptions<K, T, R>['onChildren']> | undefined
+    if (typeof param === 'function') {
+      result = param(fullpath, filename, stat, readResult, parents, files, children)
+    }
+    if (!Array.isArray(result)) {
+      result = children
+    }
+    return result as Tree<K, T | R>[]
+  }
+}
+
+export function normalizeWalkOptions<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+>(options: Partial<ReadDirTreeOptions<K, T, R>> & { done: WalkDone<K, T, R> }): WalkOptions<K, T, R> {
+
+  let processReadDirError = options.processReadDirError as ProcessError
+  if (!['throw', 'ignore', 'record'].includes(processReadDirError as string)) {
+    processReadDirError = 'ignore'
+  }
+  let processStatError = options.processStatError as ProcessError
+  if (!['throw', 'ignore', 'record'].includes(processStatError as string)) {
+    processStatError = 'ignore'
+  }
+  let childKey = options.childKey
+  if (typeof childKey !== 'string' || childKey.trim() === '') {
+    childKey = 'children' as K
   }
 
-  const defaultOptions: DirTreeOptions<ChildKey, T> = {
-    isSkip: (fullPath: string, filename: string, stats: fs.Stats, parents: T[]) => false,
-    processStatsError: 'ignore',
-    processReadDirError: 'ignore',
-    onStats,
-    onReadDir,
-    onChildren: (
-      fullPath: string,
-      filename: string,
-      postStats: T,
-      parents: T[],
-      childFiles: string[],
-      children: T[]
-    ) => children,
-    onComplete: (result: T, errors: ErrorItem[]) => { },
-    childKey: 'children' as ChildKey
+  return {
+    processReadDirError,
+    processStatError,
+    childKey,
+    isSkip: normalizeIsSkip(options.isSkip),
+    onRead: normalizeOnRead(childKey, options.onRead),
+    onChildren: normalizeOnChildren<K, T, R>(options.onChildren),
+    done: options.done,
   }
-
-  return (options ? { ...defaultOptions, ...options, onStats, onReadDir } : defaultOptions) as Required<DirTreeOptions<ChildKey, T>>
 }
 
 export function handleDone<
-  ChildKey extends string,
-  T extends DirTreeItem<ChildKey>
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
 >(options: {
-  onChildren: Required<DirTreeOptions<ChildKey, T>>['onChildren'],
+  onChildren: WalkOptions<K, T, R>['onChildren'],
   dir: string,
-  postStats: T,
-  parents: T[],
+  stat: Stats,
+  parents: Tree<K, R>[],
   files: string[],
-  done: (result: T) => void,
-  result: T,
-  childKey: ChildKey,
+  readResult: Tree<K, R>,
+  childKey: K,
+  done: WalkOptions<K, T, R>['done'],
 }) {
-  const { onChildren, dir, postStats, parents, files, result, childKey, done } = options
-  const children = onChildren(dir, path.basename(dir), postStats, parents, files, result[childKey])
-  done({ ...result, [childKey]: children })
+  const { onChildren, dir, stat, parents, files, readResult, childKey, done } = options
+  const children = readResult[childKey] as Tree<K, R>[]
+  const userChildren = onChildren(dir, path.basename(dir), stat, readResult, parents, files, children)
+  Reflect.set(readResult, childKey, userChildren)
+  done(readResult)
 }

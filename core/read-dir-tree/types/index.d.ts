@@ -1,87 +1,138 @@
 import { Stats } from 'fs'
+import { Tree } from './../../../types/shared.d'
 
 export interface FileInfo {
-  stats: Stats,
-  fullpath: string,
-  filename: string,
-  children: string[],
+  filename: string
+  fullpath: string
+  stat: Stats
   parents: FileInfo[]
-  content: string
+  files?: string[]
 }
 
-export interface WithFileInfo {
-  __fileInfo__: FileInfo
-  [key: string]: any
-}
+export type ProcessError = 'record' | 'ignore' | 'throw'
 
-type DirTreeItem<ChildKey extends string = 'children'> = {
-  [key in ChildKey]?: DirTreeItem<ChildKey>[]
-} & WithFileInfo
-
-export type ProcessError = 'record' | 'ignore' | 'throw';
-
-export interface DirTreeOptions<ChildKey extends string, T extends DirTreeItem<ChildKey>> {
+export interface ReadDirTreeOptions<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+> {
   /**
-   * 当 fs.stat 出错时，如何处理错误
-   * 默认为 ignore
-   * record：记录错误，并继续执行
-   * ignore：忽略错误，并继续执行
-   * throw：抛出错误，并终止执行
+   * 当 `fs.stat` 出错时，如何处理错误
+   * 默认为 `ignore`
+   * `record`: 记录错误，并继续执行
+   * `ignore`: 忽略错误，并继续执行
+   * `throw`: 抛出错误，并终止执行
    */
-  processStatsError?: ProcessError;
+  processStatError: ProcessError
   /**
-   * 当 fs.readdir 出错时，如何处理错误
-   * 默认为 ignore
-   * record：记录错误，并继续执行
-   * ignore：忽略错误，并继续执行
-   * throw：抛出错误，并终止执行
+   * 当 `fs.readdir` 出错时，如何处理错误
+   * 默认为 `ignore`
+   * `record`: 记录错误，并继续执行
+   * `ignore`: 忽略错误，并继续执行
+   * `throw`: 抛出错误，并终止执行
    */
-  processReadDirError?: ProcessError;
-  /**
-   * `fs.stat` 回调
-   * 返回结果将会作为 `onReadDir` 的参数 `postStats` 的值
-   * 无论是否传入该函数，无论传入的函数是否有返回值，都会返回一个含有只读属性 `__fileInfo__` 的对象
-   * @param fullPath 当前文件路径
-   * @param filename 文件名
-   * @param stats 文件 stats 信息
-   * @param parents 所有父级，处理后的文件信息
-   */
-  onStats?: (fullPath: string, filename: string, stats: Stats, parents: T[]) => T;
-  /**
-   * 根据路径和 stat 信息 判断是否跳过 fs.readdir
-   * 如果跳过 readDir，则不会执行 onReadDir 回调
-   * 默认不跳过
-   */
-  isSkip?: (fullPath: string, filename: string, stats: Stats, parents: T[]) => boolean;
-  /**
-   * `fs.readdir` 回调
-   * 返回结果将会作为 dir-tree-item
-   * 无论是否传入该函数，无论传入的函数是否有返回值，都会返回一个含有只读属性 `__fileInfo__` 和 `[childKey]` 属性的对象
-   * @param fullPath 当前文件路径
-   * @param filename 文件名
-   * @param postStats onStats 的返回值
-   * @param parents 所有父级，处理后的文件信息
-   * @param childFiles 子文件列表
-   */
-  onReadDir?: (fullPath: string, filename: string, postStats: T, parents: T[], childFiles: string[]) => T;
+  processReadDirError: ProcessError
   /**
   * 子节点 key
   * 默认为 children
   */
-  childKey?: ChildKey;
+  childKey: K
+  /**
+   * 根据路径、 `stat` 、 `parents` 判断是否跳过 当前文件夹及其子孙文件夹
+   * 如果跳过，当前文件夹及其子孙文件夹不会出现在最终的结果中
+   * 默认不跳过
+   * @param fullpath 当前文件路径
+   * @param filename 当前文件名
+   * @param stat 当前文件 stat 信息
+   * @param parents 当前文件的所有父级，类型为 `onReadDir` 的返回值
+   * @returns 
+   */
+  isSkip: (
+    fullpath: string,
+    filename: string,
+    stat: Stats,
+    parents: Tree<K, R>[],
+  ) => boolean
+  /**
+   * `fs.stat` 或 `fs.readdir` 回调
+   * 如果当前路径是文件，将会作为 `fs.stat` 的回调
+   * 如果当前路径是文件夹，将会作为 `fs.readdir` 的回调
+   * 如果没有传入该函数，或传入的函数返回值为 `undefined` ，将会默认返回类型为 `FileInfo` 的对象
+   * 如果传入的函数返回值为类型不是 `Object` 将会包装为 { value: R } 返回
+   * @param fullpath 当前文件路径
+   * @param filename 当前文件名
+   * @param stat 当前文件 stat 信息
+   * @param parents 当前文件的所有父级，类型为 `onRead` 的返回值
+   * @param files 当前文件夹读取到的子文件列表
+   */
+  onRead: (
+    fullpath: string,
+    filename: string,
+    stat: Stats,
+    parents: Tree<K, R>[],
+    files?: string[]
+  ) => R | void
   /**
    * 子节点生成完毕时的回调
    * 返回结果将会作为新的子节点数组
+   * 可以在该函数中对 `children` 做一些额外处理
+   * 如果没有传入该函数，或该函数的返回值不是一个数组，则会将参数中的 `children` 直接返回
+   * @param fullpath 当前文件夹路径
+   * @param filename 当前文件夹名
+   * @param readResult 当前文件夹 onRead 的返回值
+   * @param parents 当前文件夹的所有父级，类型为 `onReadDir` 的返回值
+   * @param files 当前文件夹读取到的子文件列表
+   * @param children 当前文件夹处理完成的子节点数组
+   * @returns 
    */
-  onChildren?: (fullPath: string, filename: string, postStats: T, parents: T[], childFiles: string[], children: T[]) => T[];
+  onChildren: (
+    fullpath: string,
+    filename: string,
+    stat: Stats,
+    readResult: Tree<K, R>,
+    parents: Tree<K, R>[],
+    files: string[],
+    children: Tree<K, R>[]
+  ) => Tree<K, T | R>[] | void
   /**
    * 目录树全部生成完毕时的回调
    */
-  onComplete?: (tree: T, errors: ErrorItem[]) => void;
+  onComplete?: (
+    tree: Tree<K, T | R>,
+    errors: ErrorItem[]
+  ) => void
+}
+
+export type NormalizeOnRead<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+> = (...args: Parameters<ReadDirTreeOptions<K, T, R>['onRead']>) => Tree<K, R>
+
+export type NormalizeOnChildren<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+> = (...args: Parameters<ReadDirTreeOptions<K, T, R>['onChildren']>) => Tree<K, T | R>[]
+
+export type WalkDone<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+> = (tree: Tree<K, T | R>) => void
+
+export type WalkOptions<
+  K extends string,
+  T extends object = FileInfo,
+  R extends object = T
+> = Omit<ReadDirTreeOptions<K, T, R>, 'onRead' | 'onChildren' | 'onComplete'> & {
+  onRead: NormalizeOnRead<K, T, R>,
+  onChildren: NormalizeOnChildren<K, T, R>,
+  done: WalkDone<K, T, R>,
 }
 
 export interface ErrorItem {
-  path: string;
-  type: 'readdir' | 'stat';
-  error: Error;
+  path: string
+  type: 'readdir' | 'stat'
+  error: Error
 }

@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import { NormalizeOptions } from '../types'
+import { mdReg } from './normalize'
 
 export function checkRestart(eventName: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir', filePath: string, restart: (forceOptimize?: boolean) => Promise<void>, options: NormalizeOptions) {
   if (eventName === 'change') {
@@ -18,7 +19,7 @@ export function checkRestart(eventName: 'add' | 'addDir' | 'change' | 'unlink' |
       if (stats.isDirectory()) {
         restart()
       }
-      else if (stats.isFile() && /\.[mM][dD]$/.test(filePath)) {
+      else if (stats.isFile() && mdReg.test(filePath)) {
         restart()
       }
     })
