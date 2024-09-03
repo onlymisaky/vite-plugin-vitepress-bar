@@ -4,7 +4,6 @@ import { FileInfo } from '../core/read-dir-tree/types'
 import { repeatTreeBF } from '../core/tree'
 import { Bar, NormalizeOptions, Options, SortItem } from '../types/index'
 
-
 function fixNav(nav) {
   repeatTreeBF<'items', DefaultTheme.NavItem>({ items: nav }, {
     childKey: 'items',
@@ -35,12 +34,24 @@ function fixSidebar(sidebar) {
   })
 }
 
-
 export function normalizeGenType(param: Options['genType']): Options['genType'] {
   if (typeof param === 'function') {
-    return param
+    return function genType(sourceBar, genBar) {
+      const { sidebar: sourceSidebar, nav: sourceNav } = sourceBar
+      const _genBar = param(sourceBar, genBar)
+      const { sidebar, nav } = _genBar
+      const bar: Bar = { ...genBar }
+      // TODO 校验
+      if (!sidebar) {
+        bar.sidebar = sourceSidebar
+      }
+      if (!nav) {
+        bar.nav = sourceNav
+      }
+      return { sidebar, nav }
+    }
   }
-  return (sourceBar, genBar) => {
+  return function genType(sourceBar, genBar) {
     const { sidebar: sourceSidebar, nav: sourceNav } = sourceBar
     const { sidebar, nav } = genBar
     const bar: Bar = { ...genBar }
@@ -74,54 +85,85 @@ export const mdReg = /\.[mM][dD]$/
 
 export function normalizeIncluded(param: Options['included']) {
   if (typeof param === 'string' || param instanceof RegExp) {
-    return (fullPath: string) => matchPathname(param, fullPath)
+    return function included(fullpath: string) {
+      return matchPathname(param, fullpath)
+    }
   }
   if (Array.isArray(param)) {
-    return (fullPath: string) => param.some(item => matchPathname(item, fullPath))
+    return function included(fullpath: string) {
+      return param.some(item => matchPathname(item, fullpath))
+    }
   }
   if (typeof param === 'function') {
-    return param
+    return function included(fullpath: string) {
+      return !!param(fullpath)
+    }
   }
-  return (fullPath: string) => {
-    return ignorePathReg.test(fullPath)
+  return function included(fullpath: string) {
+    return ignorePathReg.test(fullpath)
   }
 }
 
 export function normalizeExcluded(param: Options['excluded']) {
   if (typeof param === 'string' || param instanceof RegExp) {
-    return (fullPath: string) => matchPathname(param, fullPath)
+    return (fullpath: string) => matchPathname(param, fullpath)
   }
   if (Array.isArray(param)) {
-    return (fullPath: string) => param.some(item => matchPathname(item, fullPath))
+    return (fullpath: string) => param.some(item => matchPathname(item, fullpath))
   }
   if (typeof param === 'function') {
-    return param
+    return function excluded(fullpath: string) {
+      return !param(fullpath)
+    }
   }
-  return (fullPath: string) => {
-    return !ignorePathReg.test(fullPath)
+  return function excluded(fullpath: string) {
+    return !ignorePathReg.test(fullpath)
   }
 }
 
 export function normalizeSort(param: Options['sort']) {
-  if (param && typeof param === 'object' && param.by) {
-    return (a: SortItem, b: SortItem) => {
+  if (param && typeof param === 'object') {
+    return function sort(a: SortItem, b: SortItem) {
       const { order, by } = param
-      const _a = a[by]
-      const _b = b[by]
-      return order === 'asc' ? _a.localeCompare(_b) : _b.localeCompare(_a)
+      if (['fullpath', 'content', 'create', 'modify', 'size'].includes(by)) {
+        const _a = a[by]
+        const _b = b[by]
+        if (order === 'asc') {
+          return _a.localeCompare(_b)
+        }
+        if (order === 'desc') {
+          return _b.localeCompare(_a)
+        }
+        return 0
+      }
+      if (order === 'asc') {
+        return -1
+      }
+      if (order === 'desc') {
+        return 1
+      }
+      return 0
     }
   }
   if (typeof param === 'function') {
-    return param
+    return function sort(a: SortItem, b: SortItem) {
+      const n = param(a, b)
+      return isNaN(n) ? 0 : n
+    }
   }
-  return (a, b) => 0
+  return function sort(a: SortItem, b: SortItem) {
+    return 0
+  }
 }
 
 export function normalizeText(param: Options['text']) {
   if (typeof param === 'function') {
-    return param
+    return function text(fileInfo: FileInfo) {
+      const title = param(fileInfo)
+      return title + ''
+    }
   }
-  return (fileInfo: FileInfo) => {
+  return function text(fileInfo: FileInfo) {
     const { filename, parents } = fileInfo
     const parent = parents[parents.length - 1]
     if (filename.toLowerCase() === 'index.md' && parent) {
@@ -134,12 +176,18 @@ export function normalizeText(param: Options['text']) {
 
 export function normalizeCollapsed(param: Options['collapsed']) {
   if (typeof param === 'function') {
-    return param
+    return function collapsed(fileInfo: FileInfo) {
+      return !!param(fileInfo)
+    }
   }
   if (typeof param === 'boolean') {
-    return (fileInfo: FileInfo) => param
+    return function collapsed(fileInfo: FileInfo) {
+      return param
+    }
   }
-  return (fileInfo: FileInfo) => true
+  return function collapsed(fileInfo: FileInfo) {
+    return true
+  }
 }
 
 export function normalizeGenFor(param: Options['genFor']) {
@@ -167,7 +215,7 @@ export function normalizeGenFor(param: Options['genFor']) {
       return { nav, sidebar }
     }
   }
-  return function (fileInfo: FileInfo) {
+  return function genFor(fileInfo: FileInfo) {
     const parents = fileInfo.parents ?? []
     if (parents.length === 0) {
       return { nav: false, sidebar: false }
