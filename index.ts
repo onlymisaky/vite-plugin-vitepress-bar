@@ -1,12 +1,12 @@
 import { Plugin } from 'vite'
-import { Options, UserConfig } from './types/index'
+import { PluginOptions, UserConfig } from './types/index'
 import { createBar } from './utils'
 import { debounceCheckRestart } from './utils/check-restart'
 import { normalizePluginOptions, postProcessOptions } from './utils/normalize'
 
-export default (pluginOptions?: Partial<Options>) => {
+export default (pluginOptions?: Partial<PluginOptions>) => {
 
-  const pluginConfig = normalizePluginOptions((pluginOptions || {}) as Options)
+  const normalizePluginConfig = normalizePluginOptions((pluginOptions || {}) as PluginOptions)
 
   const plugin: Plugin = {
     name: 'vite-plugin-vitepress-bar',
@@ -15,10 +15,10 @@ export default (pluginOptions?: Partial<Options>) => {
       const vitepress = viteConfig.vitepress
       const { srcDir, userConfig } = vitepress
       const { srcExclude } = userConfig
-      postProcessOptions(pluginConfig, { srcDir, srcExclude })
-      const bar = await createBar(srcDir, pluginConfig)
+      postProcessOptions(normalizePluginConfig, { srcDir, srcExclude })
+      const bar = await createBar(srcDir, normalizePluginConfig)
       const { themeConfig } = viteConfig.vitepress.site
-      const { nav, sidebar } = pluginConfig.genType({
+      const { nav, sidebar } = normalizePluginConfig.genType({
         sidebar: themeConfig.sidebar,
         nav: themeConfig.nav,
       }, bar)
@@ -28,7 +28,7 @@ export default (pluginOptions?: Partial<Options>) => {
     },
     configureServer(server) {
       server.watcher.on('all', (eventName, filepath) => {
-        debounceCheckRestart(eventName, filepath, server.restart, pluginConfig)
+        debounceCheckRestart(eventName, filepath, server.restart, normalizePluginConfig)
       })
     },
   }

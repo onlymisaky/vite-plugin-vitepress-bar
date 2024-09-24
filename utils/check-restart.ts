@@ -1,8 +1,8 @@
 import * as fs from 'fs'
-import { NormalizeOptions } from '../types'
+import { NormalizePluginOptions } from '../types'
 import { mdReg } from './normalize'
 
-export function checkRestart(eventName: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir', filePath: string, restart: (forceOptimize?: boolean) => Promise<void>, options: NormalizeOptions) {
+export function checkRestart(eventName: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir', filePath: string, restart: (forceOptimize?: boolean) => Promise<void>, options: NormalizePluginOptions) {
   if (eventName === 'change') {
     return
   }

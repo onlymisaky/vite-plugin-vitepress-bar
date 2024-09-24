@@ -2,7 +2,7 @@ import fg from 'fast-glob'
 import { DefaultTheme } from 'vitepress'
 import { FileInfo } from '../core/read-dir-tree/types'
 import { repeatTreeBF } from '../core/tree'
-import { Bar, NormalizeOptions, Options, SortItem } from '../types/index'
+import { Bar, NormalizePluginOptions, PluginOptions, SortItem } from '../types/index'
 
 const ignorePathReg = /^(?!.*(?:\/\.vitepress(?:\/|$)|\/\.git(?:\/|$)|\/node_modules(?:\/|$)|\/dist(?:\/|$))).*$/
 export const mdReg = /\.[mM][dD]$/
@@ -37,7 +37,7 @@ function fixSidebar(sidebar) {
   })
 }
 
-function normalizeGenType(param: Options['genType']): Options['genType'] {
+function normalizeGenType(param: PluginOptions['genType']): PluginOptions['genType'] {
   if (typeof param === 'function') {
     return function genType(sourceBar, genBar) {
       const { sidebar: sourceSidebar, nav: sourceNav } = sourceBar
@@ -83,7 +83,7 @@ function matchPathname(soruce: string | RegExp, target: string) {
   return false
 }
 
-function normalizeIncluded(param: Options['included']) {
+function normalizeIncluded(param: PluginOptions['included']) {
   if (typeof param === 'string' || param instanceof RegExp) {
     return function included(fullpath: string) {
       return matchPathname(param, fullpath)
@@ -104,7 +104,7 @@ function normalizeIncluded(param: Options['included']) {
   }
 }
 
-function normalizeExcluded(param: Options['excluded']) {
+function normalizeExcluded(param: PluginOptions['excluded']) {
   if (typeof param === 'string' || param instanceof RegExp) {
     return (fullpath: string) => matchPathname(param, fullpath)
   }
@@ -121,7 +121,7 @@ function normalizeExcluded(param: Options['excluded']) {
   }
 }
 
-function normalizeSort(param: Options['sort']) {
+function normalizeSort(param: PluginOptions['sort']) {
   if (param && typeof param === 'object') {
     return function sort(a: SortItem, b: SortItem) {
       const { order, by } = param
@@ -156,7 +156,7 @@ function normalizeSort(param: Options['sort']) {
   }
 }
 
-function normalizeText(param: Options['text']) {
+function normalizeText(param: PluginOptions['text']) {
   if (typeof param === 'function') {
     return function text(fileInfo: FileInfo) {
       const title = param(fileInfo)
@@ -174,7 +174,7 @@ function normalizeText(param: Options['text']) {
   }
 }
 
-function normalizeCollapsed(param: Options['collapsed']) {
+function normalizeCollapsed(param: PluginOptions['collapsed']) {
   if (typeof param === 'function') {
     return function collapsed(fileInfo: FileInfo) {
       return !!param(fileInfo)
@@ -190,7 +190,7 @@ function normalizeCollapsed(param: Options['collapsed']) {
   }
 }
 
-function normalizeGenFor(param: Options['genFor']) {
+function normalizeGenFor(param: PluginOptions['genFor']) {
   if (typeof param === 'function') {
     return function genFor(fileInfo: FileInfo) {
       const result = param(fileInfo)
@@ -227,8 +227,8 @@ function normalizeGenFor(param: Options['genFor']) {
   }
 }
 
-export function normalizePluginOptions(pluginOptions: Options): NormalizeOptions {
-  const userOptions: NormalizeOptions = {
+export function normalizePluginOptions(pluginOptions: PluginOptions): NormalizePluginOptions {
+  const userOptions: NormalizePluginOptions = {
     genType: normalizeGenType(pluginOptions.genType),
     included: normalizeIncluded(pluginOptions.included),
     excluded: normalizeExcluded(pluginOptions.excluded),
@@ -247,7 +247,7 @@ export function normalizePluginOptions(pluginOptions: Options): NormalizeOptions
  * @param param1
  */
 export function postProcessOptions(
-  options: NormalizeOptions,
+  options: NormalizePluginOptions,
   { srcDir, srcExclude }: { srcDir: string; srcExclude: string[] | undefined }
 ) {
   const originalExcluded = options.excluded

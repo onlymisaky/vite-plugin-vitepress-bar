@@ -4,7 +4,7 @@ import { DefaultTheme } from 'vitepress'
 import { readDirTree } from '../core/read-dir-tree'
 import { FileInfo } from '../core/read-dir-tree/types'
 import { repeatTreeBF } from '../core/tree'
-import { Bar, BarItem, NormalizeOptions } from '../types'
+import { Bar, BarItem, NormalizePluginOptions } from '../types'
 import { Tree } from '../types/shared'
 import { mdReg } from './normalize'
 import { readContent } from './read-content'
@@ -25,7 +25,7 @@ function createNavItem(barItem: BarItem): DefaultTheme.NavItem {
   return navItem
 }
 
-function createSidebarItem(barItem: BarItem, options: NormalizeOptions): DefaultTheme.SidebarItem {
+function createSidebarItem(barItem: BarItem, options: NormalizePluginOptions): DefaultTheme.SidebarItem {
   const sidebarItem: DefaultTheme.SidebarItem = {
     text: barItem.text,
     link: barItem.link,
@@ -41,7 +41,7 @@ function createSidebarItem(barItem: BarItem, options: NormalizeOptions): Default
   return sidebarItem
 }
 
-function genBar(tree: Tree<'items', BarItem>, options: NormalizeOptions): Bar {
+function genBar(tree: Tree<'items', BarItem>, options: NormalizePluginOptions): Bar {
   const nav: DefaultTheme.NavItem[] = []
   const sidebar: DefaultTheme.SidebarItem[] = []
 
@@ -141,7 +141,7 @@ function getLinkByPaths(paths: string[]) {
   return link
 }
 
-function isNeedProcess(fullpath: string, options: NormalizeOptions) {
+function isNeedProcess(fullpath: string, options: NormalizePluginOptions) {
   const included = options.included(fullpath)
   const excluded = options.excluded(fullpath)
   const exists = fs.existsSync(fullpath)
@@ -153,7 +153,7 @@ function isNeedProcess(fullpath: string, options: NormalizeOptions) {
   return true
 }
 
-function readDocsDir(filepath, options: NormalizeOptions): Promise<Tree<'items', BarItem>> {
+function readDocsDir(filepath, options: NormalizePluginOptions): Promise<Tree<'items', BarItem>> {
   const fullpath = path.resolve(process.cwd(), filepath)
   const readContentPromises: Promise<string>[] = []
   const readContentResult: Record<string, string | Error> = {}
@@ -205,7 +205,7 @@ function readDocsDir(filepath, options: NormalizeOptions): Promise<Tree<'items',
   })
 }
 
-export function createBar(filepath, options: NormalizeOptions): Promise<{
+export function createBar(filepath, options: NormalizePluginOptions): Promise<{
   sidebar: DefaultTheme.SidebarItem[],
   nav: DefaultTheme.NavItem[]
 }> {

@@ -1,4 +1,4 @@
-import { BarItem, NormalizeOptions, SortItem } from '../types'
+import { BarItem, NormalizePluginOptions, SortItem } from '../types'
 
 const normalTime = new Date(2000, 0, 1).getTime() + ''
 
@@ -12,7 +12,7 @@ export function createSortInfo(item: BarItem): SortItem {
   return { fullpath, create, modify, content, size: size ? size + '' : '0' }
 }
 
-export function sort(children: BarItem[], options: NormalizeOptions) {
+export function sort(children: BarItem[], options: NormalizePluginOptions) {
   return children.sort((a, b) => {
     try {
       const sortA = createSortInfo(a)

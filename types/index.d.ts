@@ -1,4 +1,4 @@
-import { Plugin, UserConfig as ViteUserConfig } from 'vite'
+import { UserConfig as ViteUserConfig } from 'vite'
 import { UserConfig as VitepressUserConfig, DefaultTheme, SiteConfig } from 'vitepress'
 import { FileInfo } from '../core/read-dir-tree/types'
 
@@ -39,7 +39,7 @@ interface Bar {
   nav: DefaultTheme.NavItem[];
 }
 
-export interface Options {
+export interface PluginOptions {
   /**
    * 指定可以在 `nav` 和 `sidebar` 中显示的文件或目录
    * 继承自 `srcDir` 配置项，既只有能被 `vitepress` 读取到才会被读取
@@ -92,7 +92,7 @@ export interface Options {
   genType: (sourceBar: Bar, genBar: Bar) => Bar;
 }
 
-export interface NormalizeOptions extends Options {
+export interface NormalizePluginOptions extends PluginOptions {
   included: ((fullPath: string) => boolean);
   excluded: ((fullPath: string) => boolean);
   sort: (a: SortItem, b: SortItem) => number;
