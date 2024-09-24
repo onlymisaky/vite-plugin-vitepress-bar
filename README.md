@@ -4,12 +4,11 @@
 
 ## 特性
 
-- [x] 支持生成 `nav` 和 `sidebar`
-- [x] 支持自定义范围
-- [x] 支持自定义排序
-- [x] 支持自定义标题
-- [x] 支持 `dev` 模式自动更新
-- [ ] 支持 `rewrites`
+- [X] 支持生成 `nav` 和 `sidebar`
+- [X] 支持自定义生成范围
+- [X] 支持自定义排序
+- [X] 支持自定义标题
+- [X] 支持 `dev` 模式自动更新
 
 ## 使用
 
@@ -104,14 +103,15 @@ export default defineConfig({
 ### genType
 
 - 说明
+
   - 本插件会根据上述配置生成 `nav` 和 `sidebar` 两个数组，再根据结果将 `silder` 转换为 `map` 结构：
-  	- 如果 `sidebar` 的第一层在 `nav` 的第一层可以找到上级节点（(跨级别也算上级节点)，则将该 `sidebarItem` 放在 key 为 `navItme.link` 下方
-  	- 如果存在无法找到上级节点的，则会放在 key 为 `\` 下方
-  	- 最后将将原有原有的 `themeConfig.nav `和 `themeConfig.sidebar` 替换为本插件生成的 `nav` 和 `sidebar`
+    - 如果 `sidebar` 的第一层在 `nav` 的第一层可以找到上级节点（(跨级别也算上级节点)，则将该 `sidebarItem` 放在 key 为 `navItme.link` 下方
+    - 如果存在无法找到上级节点的，则会放在 key 为 `\` 下方
+    - 最后将将原有原有的 `themeConfig.nav `和 `themeConfig.sidebar` 替换为本插件生成的 `nav` 和 `sidebar`
   - 如果想要生成其他格式，或者想与原有配置做合并处理，可传入该参数处
   - 如果该函数了返回的 `nav` 和 `sidebar` 格式错误，则保持原有的 `themeConfig.nav `和 `themeConfig.sidebar`
-  
 - 类型
+
   - `(sourceBar: Bar, genBar: Bar) => Bar`
 
 ## 类型说明

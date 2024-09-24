@@ -4,6 +4,9 @@ import { FileInfo } from '../core/read-dir-tree/types'
 import { repeatTreeBF } from '../core/tree'
 import { Bar, NormalizeOptions, Options, SortItem } from '../types/index'
 
+const ignorePathReg = /^(?!.*(?:\/\.vitepress(?:\/|$)|\/\.git(?:\/|$)|\/node_modules(?:\/|$)|\/dist(?:\/|$))).*$/
+export const mdReg = /\.[mM][dD]$/
+
 function fixNav(nav) {
   repeatTreeBF<'items', DefaultTheme.NavItem>({ items: nav }, {
     childKey: 'items',
@@ -34,7 +37,7 @@ function fixSidebar(sidebar) {
   })
 }
 
-export function normalizeGenType(param: Options['genType']): Options['genType'] {
+function normalizeGenType(param: Options['genType']): Options['genType'] {
   if (typeof param === 'function') {
     return function genType(sourceBar, genBar) {
       const { sidebar: sourceSidebar, nav: sourceNav } = sourceBar
@@ -80,10 +83,7 @@ function matchPathname(soruce: string | RegExp, target: string) {
   return false
 }
 
-export const ignorePathReg = /^(?!.*(?:\/\.vitepress(?:\/|$)|\/\.git(?:\/|$)|\/node_modules(?:\/|$)|\/dist(?:\/|$))).*$/
-export const mdReg = /\.[mM][dD]$/
-
-export function normalizeIncluded(param: Options['included']) {
+function normalizeIncluded(param: Options['included']) {
   if (typeof param === 'string' || param instanceof RegExp) {
     return function included(fullpath: string) {
       return matchPathname(param, fullpath)
@@ -104,7 +104,7 @@ export function normalizeIncluded(param: Options['included']) {
   }
 }
 
-export function normalizeExcluded(param: Options['excluded']) {
+function normalizeExcluded(param: Options['excluded']) {
   if (typeof param === 'string' || param instanceof RegExp) {
     return (fullpath: string) => matchPathname(param, fullpath)
   }
@@ -121,7 +121,7 @@ export function normalizeExcluded(param: Options['excluded']) {
   }
 }
 
-export function normalizeSort(param: Options['sort']) {
+function normalizeSort(param: Options['sort']) {
   if (param && typeof param === 'object') {
     return function sort(a: SortItem, b: SortItem) {
       const { order, by } = param
@@ -156,7 +156,7 @@ export function normalizeSort(param: Options['sort']) {
   }
 }
 
-export function normalizeText(param: Options['text']) {
+function normalizeText(param: Options['text']) {
   if (typeof param === 'function') {
     return function text(fileInfo: FileInfo) {
       const title = param(fileInfo)
@@ -174,7 +174,7 @@ export function normalizeText(param: Options['text']) {
   }
 }
 
-export function normalizeCollapsed(param: Options['collapsed']) {
+function normalizeCollapsed(param: Options['collapsed']) {
   if (typeof param === 'function') {
     return function collapsed(fileInfo: FileInfo) {
       return !!param(fileInfo)
@@ -190,7 +190,7 @@ export function normalizeCollapsed(param: Options['collapsed']) {
   }
 }
 
-export function normalizeGenFor(param: Options['genFor']) {
+function normalizeGenFor(param: Options['genFor']) {
   if (typeof param === 'function') {
     return function genFor(fileInfo: FileInfo) {
       const result = param(fileInfo)
@@ -227,16 +227,42 @@ export function normalizeGenFor(param: Options['genFor']) {
   }
 }
 
-export function normalizeOptions(options: Options): NormalizeOptions {
+export function normalizePluginOptions(pluginOptions: Options): NormalizeOptions {
   const userOptions: NormalizeOptions = {
-    genType: normalizeGenType(options.genType),
-    included: normalizeIncluded(options.included),
-    excluded: normalizeExcluded(options.excluded),
-    useContent: !!options.useContent,
-    sort: normalizeSort(options.sort),
-    text: normalizeText(options.text),
-    collapsed: normalizeCollapsed(options.collapsed),
-    genFor: normalizeGenFor(options.genFor)
+    genType: normalizeGenType(pluginOptions.genType),
+    included: normalizeIncluded(pluginOptions.included),
+    excluded: normalizeExcluded(pluginOptions.excluded),
+    useContent: !!pluginOptions.useContent,
+    sort: normalizeSort(pluginOptions.sort),
+    text: normalizeText(pluginOptions.text),
+    collapsed: normalizeCollapsed(pluginOptions.collapsed),
+    genFor: normalizeGenFor(pluginOptions.genFor)
   }
   return userOptions
+}
+
+/**
+ * @description 处理用户传入的 excluded 与 vitepress 默认的 srcDir 、srcExclude 的优先级
+ * @param options
+ * @param param1
+ */
+export function postProcessOptions(
+  options: NormalizeOptions,
+  { srcDir, srcExclude }: { srcDir: string; srcExclude: string[] | undefined }
+) {
+  const originalExcluded = options.excluded
+  options.excluded = (fullPath: string) => {
+    if (fullPath === srcDir) {
+      return false
+    }
+    let excluded = originalExcluded(fullPath)
+    if (excluded) {
+      return excluded
+    }
+    if (srcExclude) {
+      const matchedFiles = fg.sync(srcExclude)
+      excluded = matchedFiles.some((item) => fullPath.endsWith(item))
+    }
+    return excluded
+  }
 }
