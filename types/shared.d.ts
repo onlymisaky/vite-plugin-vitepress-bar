@@ -19,3 +19,7 @@ export type Merge<M extends object[]> =
   : {}
 
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
+export type MaybePromise<T> = T | Promise<T>
+
+export type UnWrapPromise<T> = T extends Promise<infer U> ? U : T

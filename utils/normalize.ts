@@ -66,7 +66,6 @@ function normalizeGenType(param: PluginOptions['genType']): PluginOptions['genTy
     }
     // TODO
     fixNav(nav)
-    fixSidebar(sidebar)
     return bar
   }
 }

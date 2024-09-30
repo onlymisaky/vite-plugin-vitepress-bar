@@ -23,7 +23,7 @@ export interface ReadDirTreeOptions<
    * `ignore`: 忽略错误，并继续执行
    * `throw`: 抛出错误，并终止执行
    */
-  processStatError: ProcessError
+  handleStatErrorType: ProcessError
   /**
    * 当 `fs.readdir` 出错时，如何处理错误
    * 默认为 `ignore`
@@ -31,7 +31,7 @@ export interface ReadDirTreeOptions<
    * `ignore`: 忽略错误，并继续执行
    * `throw`: 抛出错误，并终止执行
    */
-  processReadDirError: ProcessError
+  handleReadDirErrorType: ProcessError
   /**
   * 子节点 key
   * 默认为 children

@@ -7,8 +7,8 @@ import { repeatTreeBF } from '../core/tree'
 import { Bar, BarItem, NormalizePluginOptions } from '../types'
 import { Tree } from '../types/shared'
 import { mdReg } from './normalize'
-import { readContent } from './read-content'
 import { sort } from './sort'
+import { readFile } from '../core/read-file'
 
 const sortedkey = Symbol('__sorted__')
 
@@ -56,6 +56,7 @@ function genBar(tree: Tree<'items', BarItem>, options: NormalizePluginOptions): 
           item.text = options.text(item.fileInfo)
         })
         if (!Reflect.get(current, sortedkey)) {
+          Reflect.set(current, sortedkey, true)
           sort(children, options)
         }
       }
@@ -159,8 +160,8 @@ function readDocsDir(filepath, options: NormalizePluginOptions): Promise<Tree<'i
   const readContentResult: Record<string, string | Error> = {}
   return new Promise((resolve, reject) => {
     readDirTree<'items', BarItem>(fullpath, {
-      processStatError: 'record',
-      processReadDirError: 'record',
+      handleStatErrorType: 'record',
+      handleReadDirErrorType: 'record',
       isSkip: (fullpath, filename, stat, parents) => {
         if (stat.isFile() && !mdReg.test(filename)) {
           return true
@@ -178,13 +179,26 @@ function readDocsDir(filepath, options: NormalizePluginOptions): Promise<Tree<'i
           fileInfo
         }
         if (options.useContent) {
-          readContent(stat, bar, fullpath, readContentPromises, readContentResult)
+          bar.content = ''
+          readContentResult[fullpath] = ''
+          if (stat.isFile()) {
+            const ps = readFile(fullpath).
+              then((content) => {
+                bar.content = content
+                readContentResult[fullpath] = content
+                return content
+              })
+              .catch((error) => { return '' })
+            readContentPromises.push(ps)
+          }
         }
         return bar
       },
       onChildren: (fullpath, filename, stat, readResult, parents, files, children) => {
         if (options.useContent) {
+          // 提前判断当前的 children 内容是否已全度读取完毕
           if (children.every((item) => item.fileInfo.fullpath in readContentResult)) {
+            // 增加排序标记，后续不需要重复排序
             Reflect.set(parents[parents.length - 1], sortedkey, true)
             return sort(children, options)
           }

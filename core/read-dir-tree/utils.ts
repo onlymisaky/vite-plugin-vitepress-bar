@@ -95,13 +95,13 @@ export function normalizeWalkOptions<
   R extends object = T
 >(options: Partial<ReadDirTreeOptions<K, T, R>> & { done: WalkDone<K, T, R> }): WalkOptions<K, T, R> {
 
-  let processReadDirError = options.processReadDirError as ProcessError
-  if (!['throw', 'ignore', 'record'].includes(processReadDirError as string)) {
-    processReadDirError = 'ignore'
+  let handleReadDirErrorType = options.handleReadDirErrorType as ProcessError
+  if (!['throw', 'ignore', 'record'].includes(handleReadDirErrorType as string)) {
+    handleReadDirErrorType = 'ignore'
   }
-  let processStatError = options.processStatError as ProcessError
-  if (!['throw', 'ignore', 'record'].includes(processStatError as string)) {
-    processStatError = 'ignore'
+  let handleStatErrorType = options.handleStatErrorType as ProcessError
+  if (!['throw', 'ignore', 'record'].includes(handleStatErrorType as string)) {
+    handleStatErrorType = 'ignore'
   }
   let childKey = options.childKey
   if (typeof childKey !== 'string' || childKey.trim() === '') {
@@ -109,8 +109,8 @@ export function normalizeWalkOptions<
   }
 
   return {
-    processReadDirError,
-    processStatError,
+    handleReadDirErrorType,
+    handleStatErrorType,
     childKey,
     isSkip: normalizeIsSkip(options.isSkip),
     onRead: normalizeOnRead(childKey, options.onRead),
