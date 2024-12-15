@@ -21,6 +21,7 @@ export interface BaseNodeData {
   path: string
   name: string
   stats: fs.Stats
+  parent: BaseNodeData | null
 }
 
 /**
@@ -29,7 +30,7 @@ export interface BaseNodeData {
  * @template ChildKey - 子节点键名类型
  */
 export type Tree<
-  T extends Record<string, any>,
+  T extends Record<string, any> = BaseNodeData,
   ChildKey extends string | symbol = 'children'
 > = T & Record<ChildKey, Tree<T, ChildKey>[]>;
 
@@ -38,7 +39,10 @@ export type Tree<
  * @template T - 节点数据类型
  * @template ChildKey - 子节点键名类型
  */
-export interface Options<T, ChildKey extends string | symbol = 'children'> {
+export interface Options<
+  T extends Record<string, any> = BaseNodeData,
+  ChildKey extends string | symbol = 'children'
+> {
   /**
    * 子节点在树结构中的键名
    * @default 'children'
@@ -51,7 +55,7 @@ export interface Options<T, ChildKey extends string | symbol = 'children'> {
    * @param stats - 文件/目录的详细信息
    * @returns 转换后的节点数据
    */
-  transform?: (fullpath: string, filename: string, stat: fs.Stats) => MaybePromise<T>
+  transform?: (fullpath: string, filename: string, stat: fs.Stats, parent?: Tree<T, ChildKey> | null) => MaybePromise<T>
   /**
    * 节点过滤函数
    * @param path - 文件/目录的完整路径

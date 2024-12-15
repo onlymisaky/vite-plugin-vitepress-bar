@@ -36,11 +36,14 @@ export async function readDirTreeIterative<
       continue
     }
 
-    const nodeData = await options.transform(fullpath, filename, stat)
-    const node = {
-      ...nodeData,
-      [options.childrenKey]: []
-    } as Tree<T, ChildKey>
+    const nodeData = await options.transform(fullpath, filename, stat, current.parent)
+
+    const node = type === 'file'
+      ? nodeData as Tree<T, ChildKey>
+      : {
+        ...nodeData,
+        [options.childrenKey]: []
+      } as Tree<T, ChildKey>
 
     // 如果是根节点
     if (!current.parent) {

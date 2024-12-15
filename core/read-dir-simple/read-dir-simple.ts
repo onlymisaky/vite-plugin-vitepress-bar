@@ -9,7 +9,7 @@
 import { readDirTreeRecursive } from './read-dir-recursive'
 import { readDirTreeIterative } from './read-dir-iterative'
 
-import { Options, TraversalType } from './types'
+import { BaseNodeData, Options, TraversalType } from './types'
 import { normalizeOptions } from './utils'
 
 /**
@@ -21,7 +21,7 @@ import { normalizeOptions } from './utils'
  * @returns 目录树结构
  */
 export async function readDirTree<
-  T extends Record<string, any>,
+  T extends Record<string, any> = BaseNodeData,
   ChildKey extends string | symbol = 'children'
 >(dir: string, options: Options<T, ChildKey> & { type?: TraversalType }) {
   const { type = 'iterative', ...rest } = options

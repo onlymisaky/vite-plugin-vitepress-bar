@@ -6,7 +6,11 @@ import { readDirPromisefy, statPromisefy } from './utils'
 export async function readDirTreeRecursive<
   T extends Record<string, any>,
   ChildKey extends string | symbol = 'children'
->(dir: string, options: Required<Options<T, ChildKey>>): Promise<Tree<T, ChildKey> | null> {
+>(
+  dir: string,
+  options: Required<Options<T, ChildKey>>,
+  parent: Tree<T, ChildKey> | null = null
+): Promise<Tree<T, ChildKey> | null> {
   if (!fs.existsSync(dir)) {
     return null
   }
@@ -30,7 +34,7 @@ export async function readDirTreeRecursive<
     return null
   }
 
-  const nodeData = await options.transform(fullpath, filename, stat)
+  const nodeData = await options.transform(fullpath, filename, stat, parent)
 
   if (type === 'file') {
     return nodeData as Tree<T, ChildKey>
@@ -45,7 +49,7 @@ export async function readDirTreeRecursive<
   // TODO 当子文件过多时，需要控制最大并发数
   const childrenPromises = files.map((file) => {
     const childDir = path.join(fullpath, file)
-    return readDirTreeRecursive(childDir, options)
+    return readDirTreeRecursive(childDir, options, nodeData as Tree<T, ChildKey>)
   })
 
   let children = await Promise.all(childrenPromises)

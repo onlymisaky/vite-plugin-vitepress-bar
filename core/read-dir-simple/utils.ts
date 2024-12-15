@@ -1,6 +1,6 @@
 import * as fs from 'node:fs'
 
-import { Options } from './types.d'
+import { BaseNodeData, Options } from './types.d'
 
 /**
  * Promise 化的目录读取
@@ -29,7 +29,7 @@ export function statPromisefy(dir: string) {
 }
 
 export function normalizeOptions<
-  T extends Record<string, any>,
+  T extends Record<string, any> = BaseNodeData,
   ChildKey extends string | symbol = 'children'
 >(options: Options<T, ChildKey>): Required<Options<T, ChildKey>> {
   const { childrenKey = 'children', transform, shouldSkip } = options
@@ -41,13 +41,14 @@ export function normalizeOptions<
         if (typeof nodeData === 'object') {
           return nodeData
         }
-        return { value: nodeData }
+        return { value: nodeData, parent: args[3] }
       } catch (error) {
         return {
           fullpath: args[0],
           filename: args[1],
           stat: args[2],
-          error: error
+          parent: args[3],
+          error: error,
         }
       }
     }
@@ -55,6 +56,7 @@ export function normalizeOptions<
       fullpath: args[0],
       filename: args[1],
       stat: args[2],
+      parent: args[3],
     }
   }
 
