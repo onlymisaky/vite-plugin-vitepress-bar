@@ -1,141 +1,72 @@
-import { Stats } from 'fs'
-import * as path from 'path'
-import { Tree } from './../../types/shared.d'
-import {
-  ErrorItem,
-  FileInfo,
-  NormalizeOnChildren,
-  NormalizeOnRead,
-  ProcessError,
-  ReadDirTreeOptions,
-  WalkDone,
-  WalkOptions
-} from './types'
+import * as fs from 'node:fs'
 
-export function handleError(
-  errors: ErrorItem[],
-  error: Error, type: 'readdir' | 'stat',
-  path: string,
-  mode: ProcessError = 'ignore'
-) {
-  switch (mode) {
-    case 'ignore': break
-    case 'throw': throw error
-    case 'record': errors.push({ error, path, type }); break
-    default: break
-  }
+import { FileInfo, Options } from './types'
+
+/**
+ * Promise 化的目录读取
+ * @param dir - 目录路径
+ * @returns [错误信息, 文件列表]
+ */
+export function readDirPromisefy(dir: string) {
+  return new Promise<[NodeJS.ErrnoException | null, string[]]>((resolve) => {
+    fs.readdir(dir, (err, files) => {
+      resolve([err, err ? [] : files])
+    })
+  })
 }
 
-function normalizeIsSkip<
-  K extends string,
-  T extends object = FileInfo,
-  R extends object = T
->(param?: ReadDirTreeOptions<K, T, R>['isSkip']): ReadDirTreeOptions<K, T, R>['isSkip'] {
-  return function isSkip(fullpath, filename, stat, parents) {
-    let skip = false
-    if (typeof param === 'function') {
-      skip = param(fullpath, filename, stat, parents)
-    }
-    return !!skip
-  }
+/**
+ * Promise 化的文件状态获取
+ * @param dir - 文件路径
+ * @returns [错误信息, 文件状态]
+ */
+export function statPromisefy(dir: string) {
+  return new Promise<[NodeJS.ErrnoException | null, fs.Stats]>((resolve) => {
+    fs.stat(dir, (err, stat) => {
+      resolve([err, stat])
+    })
+  })
 }
 
-function normalizeOnRead<
-  K extends string,
-  T extends object = FileInfo,
-  R extends object = T
->(childKey: K, param?: ReadDirTreeOptions<K, T, R>['onRead']): NormalizeOnRead<K, T, R> {
-  return function onRead(fullpath, filename, stat, parents, files) {
-    let result: ReturnType<ReadDirTreeOptions<K, T, R>['onRead']> | undefined
-    if (typeof param === 'function') {
-      result = param(fullpath, filename, stat, parents, files)
-    }
-    if (typeof result === 'undefined') {
-      let _parents = parents as unknown as FileInfo[]
-      let fileInfo: FileInfo = { fullpath, filename, stat, parents: _parents }
-      if (stat.isDirectory()) {
-        fileInfo.files = files
+export function normalizeOptions<
+  T extends Record<string, any> = FileInfo,
+  ChildKey extends string | symbol = 'children'
+>(options: Options<T, ChildKey>): Required<Options<T, ChildKey>> {
+  const { childrenKey = 'children', transform, shouldSkip } = options
+
+  async function defaultTransform(...args: Parameters<Required<Options<T, ChildKey>>['transform']>) {
+    const [fileInfo, parentNode] = args;
+    if (typeof transform === 'function') {
+      try {
+        const nodeData = await transform(...args)
+        if (typeof nodeData === 'object') {
+          return nodeData
+        }
+        return { value: nodeData, parent: parentNode }
+      } catch (error) {
+        return {
+          ...fileInfo,
+          error: error,
+        }
       }
-      result = fileInfo as R
     }
-    if (Object.prototype.toString.call(result) !== '[object Object]') {
-      result = { value: result } as R
-    }
-    if (stat.isDirectory()) {
-      // 当 childDir 全部读取完成时，会将结果 push 到 children 中
-      const children: Tree<K, R>[] = []
-      let res: Tree<K, R> = { [childKey]: children, ...result, }
-      return res
-    }
-
-    return result as Tree<K, R>
+    return fileInfo
   }
-}
 
-function normalizeOnChildren<
-  K extends string,
-  T extends object = FileInfo,
-  R extends object = T
->(param?: ReadDirTreeOptions<K, T, R>['onChildren']): NormalizeOnChildren<K, T, R> {
-  return function onChildren(fullpath, filename, stat, readResult, parents, files, children) {
-    let result: ReturnType<ReadDirTreeOptions<K, T, R>['onChildren']> | undefined
-    if (typeof param === 'function') {
-      result = param(fullpath, filename, stat, readResult, parents, files, children)
+  async function defaultShouldSkip(...args: Parameters<Required<Options<T, ChildKey>>['shouldSkip']>) {
+    if (typeof shouldSkip === 'function') {
+      try {
+        return !!(await shouldSkip(...args))
+      } catch (error) {
+        return false
+      }
     }
-    if (!Array.isArray(result)) {
-      result = children
-    }
-    return result as Tree<K, T | R>[]
-  }
-}
-
-export function normalizeWalkOptions<
-  K extends string,
-  T extends object = FileInfo,
-  R extends object = T
->(options: Partial<ReadDirTreeOptions<K, T, R>> & { done: WalkDone<K, T, R> }): WalkOptions<K, T, R> {
-
-  let handleReadDirErrorType = options.handleReadDirErrorType as ProcessError
-  if (!['throw', 'ignore', 'record'].includes(handleReadDirErrorType as string)) {
-    handleReadDirErrorType = 'ignore'
-  }
-  let handleStatErrorType = options.handleStatErrorType as ProcessError
-  if (!['throw', 'ignore', 'record'].includes(handleStatErrorType as string)) {
-    handleStatErrorType = 'ignore'
-  }
-  let childKey = options.childKey
-  if (typeof childKey !== 'string' || childKey.trim() === '') {
-    childKey = 'children' as K
+    return false
   }
 
   return {
-    handleReadDirErrorType,
-    handleStatErrorType,
-    childKey,
-    isSkip: normalizeIsSkip(options.isSkip),
-    onRead: normalizeOnRead(childKey, options.onRead),
-    onChildren: normalizeOnChildren<K, T, R>(options.onChildren),
-    done: options.done,
-  }
-}
-
-export function handleDone<
-  K extends string,
-  T extends object = FileInfo,
-  R extends object = T
->(options: {
-  onChildren: WalkOptions<K, T, R>['onChildren'],
-  dir: string,
-  stat: Stats,
-  parents: Tree<K, R>[],
-  files: string[],
-  readResult: Tree<K, R>,
-  childKey: K,
-  done: WalkOptions<K, T, R>['done'],
-}) {
-  const { onChildren, dir, stat, parents, files, readResult, childKey, done } = options
-  const children = readResult[childKey] as Tree<K, R>[]
-  const userChildren = onChildren(dir, path.basename(dir), stat, readResult, parents, files, children)
-  Reflect.set(readResult, childKey, userChildren)
-  done(readResult)
+    childrenKey,
+    transform: defaultTransform,
+    shouldSkip: defaultShouldSkip,
+  } as Required<Options<T, ChildKey>>
 }

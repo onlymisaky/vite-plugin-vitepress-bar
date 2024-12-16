@@ -1,6 +1,6 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { Options, Tree } from './types.d'
+import { FileInfo, Options, Tree } from './types'
 import { readDirPromisefy, statPromisefy } from './utils'
 
 export async function readDirTreeRecursive<
@@ -9,7 +9,8 @@ export async function readDirTreeRecursive<
 >(
   dir: string,
   options: Required<Options<T, ChildKey>>,
-  parent: Tree<T, ChildKey> | null = null
+  parentNode: Tree<T, ChildKey> | null = null,
+  parentFileInfo: FileInfo | null = null
 ): Promise<Tree<T, ChildKey> | null> {
   if (!fs.existsSync(dir)) {
     return null
@@ -28,13 +29,14 @@ export async function readDirTreeRecursive<
 
   const fullpath = path.resolve(dir)
   const filename = path.basename(fullpath)
+  const fileInfo: FileInfo = { path: fullpath, name: filename, stat, parent: parentFileInfo }
 
-  const shouldSkip = await options.shouldSkip(fullpath, filename, stat)
+  const shouldSkip = await options.shouldSkip(fileInfo, parentNode)
   if (shouldSkip) {
     return null
   }
 
-  const nodeData = await options.transform(fullpath, filename, stat, parent)
+  const nodeData = await options.transform(fileInfo, parentNode)
 
   if (type === 'file') {
     return nodeData as Tree<T, ChildKey>
@@ -49,7 +51,7 @@ export async function readDirTreeRecursive<
   // TODO 当子文件过多时，需要控制最大并发数
   const childrenPromises = files.map((file) => {
     const childDir = path.join(fullpath, file)
-    return readDirTreeRecursive(childDir, options, nodeData as Tree<T, ChildKey>)
+    return readDirTreeRecursive(childDir, options, nodeData as Tree<T, ChildKey>, fileInfo)
   })
 
   let children = await Promise.all(childrenPromises)

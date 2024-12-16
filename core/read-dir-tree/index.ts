@@ -1,158 +1,30 @@
-import * as fs from 'fs'
-import * as path from 'path'
-import { Tree } from '../../types/shared'
-import { ErrorItem, FileInfo, ReadDirTreeOptions, WalkOptions } from './types'
-import { handleDone, handleError, normalizeWalkOptions } from './utils'
-import { readDirPromisefy, statPromisefy } from './promisefy'
+/**
+ * 读取目录
+ * 妥协了，在前几个版本中，总是想在读取过程中做一些事情
+ * 比如：生成自定义子节点、排序、过滤等操作，这些操作会极大程度的增加函数实现的复杂度
+ * 虽然一遍读取，一边做上述这些操作可以减少后续的迭代操作，但是收益并不大
+ * 所以，简简单单的实现就好了
+ */
 
-async function walk<
-  K extends string,
-  T extends object = FileInfo,
-  R extends object = T
->(
-  dir: string,
-  stat: fs.Stats,
-  parents: Tree<K, R>[],
-  errors: ErrorItem[],
-  options: WalkOptions<K, T, R>,
-) {
-  const {
-    handleStatErrorType,
-    handleReadDirErrorType,
-    isSkip,
-    onRead,
-    onChildren,
-    childKey,
-    done
-  } = options
+import { readDirTreeRecursive } from './read-dir-recursive'
+import { readDirTreeIterative } from './read-dir-iterative'
+import { FileInfo, Options, TraversalType } from './types'
+import { normalizeOptions } from './utils'
 
-  const [readDirError, files] = await readDirPromisefy(dir)
-
-  if (readDirError) {
-    handleError(errors, readDirError, 'readdir', dir, handleReadDirErrorType)
-    return
-  }
-  let count = files.length
-  const readResult = onRead(dir, path.basename(dir), stat, parents, files)
-
-  const handleDoneParams: Parameters<typeof handleDone<K, T, R>>[0] = {
-    dir,
-    stat,
-    readResult,
-    parents: [],
-    files,
-    childKey,
-    onChildren,
-    done: done,
-  }
-
-  if (count === 0) {
-    handleDoneParams.parents = [...parents]
-    handleDone(handleDoneParams)
-    return
-  }
-
-  async function handleFile(file: string) {
-    const childDir = path.join(dir, file)
-    const [statError, stat] = await statPromisefy(childDir)
-    if (statError) {
-      count--
-      handleError(errors, statError, 'stat', childDir, handleStatErrorType)
-      if (count === 0) {
-        handleDoneParams.parents = [...parents, readResult]
-        handleDone(handleDoneParams)
-      }
-      return
-    }
-
-    if (isSkip(childDir, file, stat, [...parents, readResult])) {
-      count--
-      if (count === 0) {
-        handleDoneParams.parents = [...parents, readResult]
-        handleDone(handleDoneParams)
-      }
-      return
-    }
-
-    if (stat.isFile()) {
-      const readRes = onRead(childDir, file, stat, [...parents, readResult])
-      readResult[childKey]?.push(readRes)
-      count--
-      if (count === 0) {
-        handleDoneParams.parents = [...parents, readResult]
-        handleDone(handleDoneParams)
-      }
-      return
-    }
-
-    if (stat.isDirectory()) {
-      walk(childDir, stat, [...parents, readResult], errors, {
-        ...options,
-        done: (childResult) => {
-          readResult[childKey]?.push(childResult as Tree<K, R>)
-          count--
-          if (count === 0) {
-            handleDoneParams.parents = [...parents, readResult]
-            handleDone(handleDoneParams)
-          }
-        }
-      })
-      return
-    }
-  }
-
-  files.forEach((file) => {
-    return handleFile(file)
-  })
-}
-
+/**
+ * 读取目录树
+ * @template T - 节点数据类型
+ * @template ChildKey - 子节点键名类型
+ * @param dir - 目录路径
+ * @param options - 配置选项
+ * @returns 目录树结构
+ */
 export async function readDirTree<
-  K extends string,
-  T extends object = FileInfo,
-  R extends object = T
->(dir: string, options?: ReadDirTreeOptions<K, T, R>) {
-  let { onComplete, ...other } = {
-    onComplete: (result) => { },
-    ...options,
-  }
-
-  function done(result: Tree<K, T | R>) {
-    onComplete(result, errors)
-  }
-
-  const walkOptions = normalizeWalkOptions({ ...other, done })
-  const { onRead, isSkip } = walkOptions
-
-  const errors: ErrorItem[] = []
-
-  try {
-    if (!fs.existsSync(dir)) {
-      return new Error(dir + ' not exists')
-    }
-
-    const [error, stat] = await statPromisefy(dir)
-
-    if (error) {
-      handleError(errors, error, 'stat', dir, 'throw')
-      onComplete({} as Tree<K, T | R>, errors)
-      return
-    }
-
-    if (isSkip(dir, path.basename(dir), stat, [])) {
-      onComplete({} as Tree<K, T | R>, errors)
-      return
-    }
-
-    if (stat.isFile()) {
-      const tree = onRead(dir, path.basename(dir), stat, []) as Tree<K, T | R>
-      onComplete(tree, errors)
-      return
-    }
-
-    if (stat.isDirectory()) {
-      walk(dir, stat, [], errors, walkOptions)
-    }
-  } catch (error) {
-    handleError(errors, error, 'stat', dir, 'throw')
-  }
+  T extends Record<string, any> = FileInfo,
+  ChildKey extends string | symbol = 'children'
+>(dir: string, options: Options<T, ChildKey> & { type?: TraversalType }) {
+  const { type = 'iterative', ...rest } = options
+  return type === 'recursive'
+    ? await readDirTreeRecursive(dir, normalizeOptions(rest))
+    : await readDirTreeIterative(dir, normalizeOptions(rest))
 }

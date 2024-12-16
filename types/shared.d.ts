@@ -1,25 +1,36 @@
-export type Tree<K extends string, T extends object> = T & { [P in K]?: Tree<K, T>[] }
-export type TreeLeafNodeDifferentFromParent<K extends string, T extends object, Leaf = T> = T & { [P in K]?: TreeLeafNodeDifferentFromParent<K, T, Leaf>[] } | Leaf
+import * as fs from 'node:fs'
 
-export type Without<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
-export type With<T, K extends keyof any> = Pick<T, Extract<keyof T, K>>
+type MaybePromise<T> = T | Promise<T>
 
-export type UnionToIntersection<U> =
-  (U extends any ? (x: U) => void : never) extends (x: infer I) => void
-  ? I
-  : never
-
-export type MergeTwo<T, U> = {
-  [K in keyof T | keyof U]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never
+export interface FileInfo {
+  path: string
+  name: string
+  stat: fs.Stats
+  parent: FileInfo | null | undefined
 }
 
-export type Merge<M extends object[]> =
-  M extends [infer First, ...infer Rest]
-  ? (Rest extends object[] ? MergeTwo<First & {}, Merge<Rest>> : First)
-  : {}
+export type FileInfoWithoutParent = Omit<FileInfo, 'parent'>
 
-export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+// type TreeNode<T, K extends string = 'children'> = {
+//   value: T;
+// } & Record<K, TreeNode<T, K>[]>;
 
-export type MaybePromise<T> = T | Promise<T>
+// type Tree<T, K extends string = 'children'> = TreeNode<T, K>;
 
-export type UnWrapPromise<T> = T extends Promise<infer U> ? U : T
+// type Tree<
+//   NodeData extends Record<string, any>,
+//   ChildKey extends string = 'children',
+//   ChildData extends Record<string, any> = NodeData,
+// > = NodeData & Record<ChildKey, Tree<NodeData, ChildKey, ChildData>[]>;
+
+/**
+ * 树形结构节点类型
+ * @template T - 节点数据类型
+ * @template ChildKey - 子节点键名类型
+ */
+export type Tree<
+  T extends Record<string, any> = FileInfo,
+  ChildKey extends string | symbol = 'children'
+> = T & Record<ChildKey, Tree<T, ChildKey>[]>;
+
+

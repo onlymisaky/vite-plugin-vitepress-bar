@@ -1,6 +1,6 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { Options, QueueItem, Tree } from './types'
+import { FileInfo, Options, QueueItem, Tree } from './types'
 import { readDirPromisefy, statPromisefy } from './utils'
 
 export async function readDirTreeIterative<
@@ -12,7 +12,7 @@ export async function readDirTreeIterative<
   }
 
   // 初始化队列
-  const queue: QueueItem<T, ChildKey>[] = [{ path: dir, parent: null }]
+  const queue: QueueItem<T, ChildKey>[] = [{ path: dir, parentNode: null, parentFileInfo: null }]
   let root: Tree<T, ChildKey> | null = null
 
   while (queue.length > 0) {
@@ -30,13 +30,14 @@ export async function readDirTreeIterative<
 
     const fullpath = path.resolve(current.path)
     const filename = path.basename(fullpath)
+    const fileInfo: FileInfo = { path: fullpath, name: filename, stat, parent: current.parentFileInfo }
 
-    const shouldSkip = await options.shouldSkip(fullpath, filename, stat)
+    const shouldSkip = await options.shouldSkip(fileInfo, current.parentNode)
     if (shouldSkip) {
       continue
     }
 
-    const nodeData = await options.transform(fullpath, filename, stat, current.parent)
+    const nodeData = await options.transform(fileInfo, current.parentNode)
 
     const node = type === 'file'
       ? nodeData as Tree<T, ChildKey>
@@ -46,10 +47,10 @@ export async function readDirTreeIterative<
       } as Tree<T, ChildKey>
 
     // 如果是根节点
-    if (!current.parent) {
+    if (!current.parentNode) {
       root = node
     } else {
-      (current.parent[options.childrenKey] as Tree<T, ChildKey>[]).push(node)
+      (current.parentNode[options.childrenKey] as Tree<T, ChildKey>[]).push(node)
     }
 
     // 如果是目录，将其子项添加到队列
@@ -58,7 +59,8 @@ export async function readDirTreeIterative<
       if (!readError && files.length > 0) {
         queue.push(...files.map(file => ({
           path: path.join(fullpath, file),
-          parent: node
+          parentNode: node,
+          parentFileInfo: fileInfo
         })))
       }
     }

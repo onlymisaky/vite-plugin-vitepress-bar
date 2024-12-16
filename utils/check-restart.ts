@@ -1,28 +1,28 @@
-import * as fs from 'fs'
+import * as path from 'path'
 import { NormalizePluginOptions } from '../types'
-import { mdReg } from './normalize'
+import { statPromisefy } from '../core/read-dir-tree/utils'
+import { isNeedProcess } from '.'
 
-export function checkRestart(eventName: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir', filePath: string, restart: (forceOptimize?: boolean) => Promise<void>, options: NormalizePluginOptions) {
+export async function checkRestart(
+  eventName: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir',
+  filePath: string,
+  restart: (forceOptimize?: boolean) => Promise<void>,
+  options: NormalizePluginOptions,
+  { srcDir, srcExclude }: { srcDir: string; srcExclude: string[] | undefined }
+) {
   if (eventName === 'change') {
     return
   }
-  const included = options.included(filePath)
-  if (included) {
-    if (['unlink', 'unlinkDir'].includes(eventName)) {
-      restart()
-      return
-    }
-    fs.stat(filePath, (err, stats) => {
-      if (err) {
-        return
-      }
-      if (stats.isDirectory()) {
-        restart()
-      }
-      else if (stats.isFile() && mdReg.test(filePath)) {
-        restart()
-      }
-    })
+  const [statError, stat] = await statPromisefy(filePath)
+  if (statError) {
+    return
+  }
+  if (await isNeedProcess({
+    path: filePath,
+    name: path.basename(filePath),
+    stat,
+  }, options, { srcDir, srcExclude })) {
+    restart()
   }
 }
 
