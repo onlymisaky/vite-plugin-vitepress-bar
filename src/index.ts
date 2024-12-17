@@ -1,24 +1,24 @@
-import { Plugin } from 'vite'
-import { PluginOptions, UserConfig } from './types/index'
-import { createBar } from './utils'
+import type { Plugin } from 'vitepress'
+import type { PluginOptions, UserConfig } from './types/index'
 import { debounceCheckRestart } from './utils/check-restart'
+import { createBar } from './utils/create-bar'
 import { normalizePluginOptions } from './utils/normalize'
 
-export default (pluginOptions?: Partial<PluginOptions>) => {
-
+export default function vitepressBar(pluginOptions?: Partial<PluginOptions>): Plugin {
   const normalizePluginConfig = normalizePluginOptions((pluginOptions || {}) as PluginOptions)
   let srcDir = ''
   let srcExclude: string[] | undefined
 
   const plugin: Plugin = {
     name: 'vite-plugin-vitepress-bar',
-    async config(config, env) {
+    async config(config) {
       const viteConfig = config as UserConfig
       const vitepress = viteConfig.vitepress
       const { userConfig } = vitepress
       srcDir = vitepress.srcDir
       srcExclude = userConfig.srcExclude
-      const { sidebar, nav } = await createBar(srcDir, normalizePluginConfig, srcExclude)
+      const bar = await createBar(srcDir, normalizePluginConfig, srcExclude)
+      const { sidebar, nav } = normalizePluginConfig.complete(bar)
       const { themeConfig } = viteConfig.vitepress.site
       themeConfig.sidebar = sidebar
       themeConfig.nav = nav

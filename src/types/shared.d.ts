@@ -1,15 +1,17 @@
-import * as fs from 'node:fs'
+import type * as fs from 'node:fs'
 
-type MaybePromise<T> = T | Promise<T>
+export type MaybePromise<T> = T | Promise<T>
 
-export interface FileInfo {
+export interface FileInfoSlim {
   path: string
   name: string
   stat: fs.Stats
-  parent: FileInfo | null | undefined
 }
 
-export type FileInfoWithoutParent = Omit<FileInfo, 'parent'>
+export interface FileInfo extends FileInfoSlim {
+  files: string[]
+  parent: FileInfo | null | undefined
+}
 
 // type TreeNode<T, K extends string = 'children'> = {
 //   value: T;
@@ -30,7 +32,5 @@ export type FileInfoWithoutParent = Omit<FileInfo, 'parent'>
  */
 export type Tree<
   T extends Record<string, any> = FileInfo,
-  ChildKey extends string | symbol = 'children'
-> = T & Record<ChildKey, Tree<T, ChildKey>[]>;
-
-
+  ChildKey extends string | symbol = 'children',
+> = T & Record<ChildKey, Tree<T, ChildKey>[]>

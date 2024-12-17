@@ -1,9 +1,20 @@
-import { UserConfig as ViteUserConfig } from 'vite'
-import { UserConfig as VitepressUserConfig, DefaultTheme, SiteConfig } from 'vitepress'
-import { MaybePromise, FileInfoWithoutParent } from './shared';
+import type { UserConfig as ViteUserConfig } from 'vite'
+import type { DefaultTheme, SiteConfig, UserConfig as VitepressUserConfig } from 'vitepress'
+import type { FileInfoSlim, MaybePromise } from './shared'
 
 export interface UserConfig extends ViteUserConfig {
   vitepress: VitepressUserConfig<DefaultTheme.Config> & SiteConfig
+}
+
+export type NavItem = DefaultTheme.NavItemChildren | DefaultTheme.NavItemWithLink
+
+export interface SidebarMulti {
+  [key: string]: DefaultTheme.SidebarItem[]
+}
+
+export interface Bar {
+  sidebar: SidebarMulti
+  nav: NavItem[]
 }
 
 export interface PluginOptions {
@@ -14,17 +25,19 @@ export interface PluginOptions {
    * 优先级高于 `excluded`
    * 支持绝对路径、正则、fast-glob、自定义函数
    */
-  included: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfoWithoutParent) => MaybePromise<boolean>);
+  included: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfoSlim) => MaybePromise<boolean>)
   /**
    * 设置当前文件或目录是否在 `nav` 和 `sidebar` 中显示(这意味着只有知道该链接存在的人才能访问，恶意穷举除外)
    * 继承自 `srcExclude` 配置项，既 `vitepress` 排除的目录也会被排除
    * 优先级低于 `included`
    * 支持绝对路径、正则、fast-glob、自定义函数
    */
-  excluded: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfoWithoutParent) => MaybePromise<boolean>);
+  excluded: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfoSlim) => MaybePromise<boolean>)
+
+  complete: (bar: Bar) => { sidebar: DefaultTheme.Sidebar, nav: DefaultTheme.NavItem[] }
 }
 
 export interface NormalizePluginOptions extends PluginOptions {
-  included: (fileInfo: FileInfoWithoutParent) => MaybePromise<boolean>;
-  excluded: (fileInfo: FileInfoWithoutParent) => MaybePromise<boolean>;
+  included: (fileInfo: FileInfoSlim) => MaybePromise<boolean>
+  excluded: (fileInfo: FileInfoSlim) => MaybePromise<boolean>
 }

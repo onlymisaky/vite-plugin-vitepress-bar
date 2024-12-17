@@ -1,11 +1,11 @@
+import type { FileInfo, Options, QueueItem, Tree } from './types'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { FileInfo, Options, QueueItem, Tree } from './types'
 import { readDirPromisefy, statPromisefy } from './utils'
 
 export async function readDirTreeIterative<
   T extends Record<string, any>,
-  ChildKey extends string | symbol = 'children'
+  ChildKey extends string | symbol = 'children',
 >(dir: string, options: Required<Options<T, ChildKey>>): Promise<Tree<T, ChildKey> | null> {
   if (!fs.existsSync(dir)) {
     return null
@@ -30,7 +30,22 @@ export async function readDirTreeIterative<
 
     const fullpath = path.resolve(current.path)
     const filename = path.basename(fullpath)
-    const fileInfo: FileInfo = { path: fullpath, name: filename, stat, parent: current.parentFileInfo }
+
+    let files: string[] = []
+    if (type === 'directory') {
+      const [readError, _files] = await readDirPromisefy(fullpath)
+      if (readError)
+        return null
+      files = _files
+    }
+
+    const fileInfo: FileInfo = {
+      path: fullpath,
+      name: filename,
+      stat,
+      files,
+      parent: current.parentFileInfo,
+    }
 
     const shouldSkip = await options.shouldSkip(fileInfo, current.parentNode)
     if (shouldSkip) {
@@ -42,25 +57,25 @@ export async function readDirTreeIterative<
     const node = type === 'file'
       ? nodeData as Tree<T, ChildKey>
       : {
-        ...nodeData,
-        [options.childrenKey]: []
-      } as Tree<T, ChildKey>
+          ...nodeData,
+          [options.childrenKey]: [],
+        } as Tree<T, ChildKey>
 
     // 如果是根节点
     if (!current.parentNode) {
       root = node
-    } else {
+    }
+    else {
       (current.parentNode[options.childrenKey] as Tree<T, ChildKey>[]).push(node)
     }
 
     // 如果是目录，将其子项添加到队列
     if (type === 'directory') {
-      const [readError, files] = await readDirPromisefy(fullpath)
-      if (!readError && files.length > 0) {
+      if (files.length > 0) {
         queue.push(...files.map(file => ({
           path: path.join(fullpath, file),
           parentNode: node,
-          parentFileInfo: fileInfo
+          parentFileInfo: fileInfo,
         })))
       }
     }

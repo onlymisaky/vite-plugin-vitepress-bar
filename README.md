@@ -17,8 +17,8 @@ npm i vite-plugin-vitepress-bar -D
 ```
 
 ```js
-import { defineConfig } from 'vitepress'
 import vitepressBar from 'vite-plugin-vitepress-sidebar'
+import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   plugins: [
@@ -41,7 +41,7 @@ export default defineConfig({
   - `string[]`
   - `RegExp`
   - `RegExp[]`
-  - `(fileInfo: FileInfoWithoutParent) => MaybePromise<boolean>`
+  - `(fileInfo: FileInfoSlim) => MaybePromise<boolean>`
 
 ### excluded
 
@@ -54,14 +54,14 @@ export default defineConfig({
   - `string[]`
   - `RegExp`
   - `RegExp[]`
-  - `(fileInfo: FileInfoWithoutParent) => MaybePromise<boolean>`
+  - `(fileInfo: FileInfoSlim) => MaybePromise<boolean>`
 
 ## 类型说明
 
-### FileInfoWithoutParent
+### FileInfoSlim
 
 ```typescript
-export interface FileInfoWithoutParent {
+export interface FileInfoSlim {
   path: string
   name: string
   stat: fs.Stats

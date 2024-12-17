@@ -1,4 +1,5 @@
-import { MaybePromise, FileInfo, Tree } from '../../types/shared'
+import type { MaybePromise } from '../../types/shared'
+import { FileInfo, Tree } from '../../types/shared'
 
 export { FileInfo, Tree }
 
@@ -11,7 +12,7 @@ export type TraversalType = 'recursive' | 'iterative'
  */
 export interface Options<
   T extends Record<string, any> = FileInfo,
-  ChildKey extends string | symbol = 'children'
+  ChildKey extends string | symbol = 'children',
 > {
   /**
    * 子节点在树结构中的键名
@@ -43,11 +44,11 @@ export interface Options<
  */
 export interface QueueItem<
   T extends Record<string, any>,
-  ChildKey extends string | symbol = 'children'
+  ChildKey extends string | symbol = 'children',
 > {
   /** 当前节点路径 */
   path: string
   /** 父节点引用 */
-  parentNode: Tree<T, ChildKey> | null,
+  parentNode: Tree<T, ChildKey> | null
   parentFileInfo: FileInfo | null
 }

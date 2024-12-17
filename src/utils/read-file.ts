@@ -1,7 +1,7 @@
-import * as fs from 'fs'
+import * as fs from 'node:fs'
 
-export function readFile(filePath: string, encoding: BufferEncoding = 'utf-8') {
-  let resolve, reject
+export function readFile(filePath: string, encoding: BufferEncoding = 'utf-8'): Promise<string> {
+  let resolve: (data: string) => void, reject: (err: Error) => void
   const promise = new Promise<string>((res, rej) => {
     resolve = res
     reject = rej
