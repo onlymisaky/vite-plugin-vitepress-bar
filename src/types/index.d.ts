@@ -34,6 +34,11 @@ export interface PluginOptions {
    */
   excluded: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfoSlim) => MaybePromise<boolean>)
 
+  /**
+   * `bar` 生成后的回调
+   * 如果传入该配置项，则会将该函数的返回值作为 `nav` 和 `sidebar` 覆盖原有的配置
+   * 如果不传入该配置项，则会将生成的 `bar` 覆盖原有的 `nav` 和 `sidebar`
+   */
   complete: (bar: Bar) => { sidebar: DefaultTheme.Sidebar, nav: DefaultTheme.NavItem[] }
 }
 

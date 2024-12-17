@@ -56,6 +56,15 @@ export default defineConfig({
   - `RegExp[]`
   - `(fileInfo: FileInfoSlim) => MaybePromise<boolean>`
 
+### complete
+
+- 说明
+  - `bar` 生成后的回调
+  - 如果传入该配置项，则会将该函数的返回值作为 `nav` 和 `sidebar` 覆盖原有的配置
+  - 如果不传入该配置项，则会将生成的 `bar` 覆盖原有的 `nav` 和 `sidebar`
+- 类型
+  - `(bar: Bar) => { sidebar: DefaultTheme.Sidebar, nav: DefaultTheme.NavItem[] }`
+
 ## 类型说明
 
 ### FileInfoSlim
@@ -72,4 +81,22 @@ export interface FileInfoSlim {
 
 ```typescript
 type MaybePromise<T> = T | Promise<T>
+```
+
+### Bar
+
+```typescript
+import type { DefaultTheme } from 'vitepress'
+
+type NavItem = DefaultTheme.NavItemChildren | DefaultTheme.NavItemWithLink
+
+interface SidebarMulti {
+  [key: string]: DefaultTheme.SidebarItem[]
+}
+
+
+interface Bar {
+  sidebar: SidebarMulti
+  nav: NavItem[]
+}
 ```
