@@ -25,7 +25,7 @@ function getLinkPrefixByParent(parent: FileInfo | null | undefined, root: string
   let link = '/'
   let _parent: FileInfo | null | undefined = parent
   while (_parent && _parent.path !== root) {
-    link += `${parent.name}/`
+    link = `/${_parent.name}/${link}`
     _parent = _parent.parent
   }
   return link
