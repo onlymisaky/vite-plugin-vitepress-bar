@@ -34,7 +34,7 @@ export interface Options<
    * @param stats - 文件/目录的详细信息
    * @returns 转换后的节点数据
    */
-  transform?: (fileInfo: FileInfo, parentNode: Tree<T, ChildKey> | null) => MaybePromise<T>
+  transform?: (fileInfo: FileInfo, parentNode: Tree<T, ChildKey> | null) => MaybePromise<T | null>
 }
 
 /**

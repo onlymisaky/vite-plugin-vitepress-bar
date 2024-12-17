@@ -54,6 +54,10 @@ export async function readDirTreeIterative<
 
     const nodeData = await options.transform(fileInfo, current.parentNode)
 
+    if (nodeData === null) {
+      continue
+    }
+
     const node = type === 'file'
       ? nodeData as Tree<T, ChildKey>
       : {

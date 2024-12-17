@@ -83,10 +83,18 @@ export function createBar(
 
       if (fileInfo.stat.isDirectory()) {
         const hasIndex = fileInfo.files.some(item => item.toLowerCase() === 'index.md')
-        // 没有 index.md 的文件夹
-        // 需要删除 link
+        // 没有 index.md 的文件夹, 需要删除 link
         if (!hasIndex) {
           delete nodeData.link
+        }
+      }
+
+      if (fileInfo.stat.isFile()) {
+        const isIndex = fileInfo.name.toLowerCase() === 'index.md'
+        // 除了根目录下的 index.md 文件，不在结果中展示
+        // 因为已经为父级节点设置了 link
+        if (isIndex && fileInfo.path !== root) {
+          return null
         }
       }
 
