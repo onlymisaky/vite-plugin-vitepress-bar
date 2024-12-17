@@ -1,4 +1,4 @@
-import type { NormalizePluginOptions, PluginOptions } from '../types/index'
+import type { Bar, NormalizePluginOptions, PluginOptions } from '../types/index'
 import type { FileInfoSlim } from '../types/shared'
 import fg from 'fast-glob'
 
@@ -69,18 +69,32 @@ function normalizeExcluded(param: PluginOptions['excluded']) {
   }
 }
 
+function filterNavAndSidebar(bar: Bar, maxNavItemsWithoutChildren = 6): Bar {
+  const { nav, sidebar } = bar
+  const navNoChildren = nav.every(item => !item.items)
+
+  if (navNoChildren) {
+    if (nav.length < maxNavItemsWithoutChildren) {
+      return { nav, sidebar: {} }
+    }
+    return { nav: [], sidebar }
+  }
+
+  return bar
+}
+
 function normalizeComplate(param: PluginOptions['complete']) {
   if (typeof param !== 'function') {
     return function complete(...args: Parameters<PluginOptions['complete']>) {
       const [bar] = args
-      return bar
+      return filterNavAndSidebar(bar)
     }
   }
   return function complete(...args: Parameters<PluginOptions['complete']>) {
     const [bar] = args
     const res = param(bar)
     if (typeof res !== 'object' || (!('nav' in bar) && !('sidebar' in bar))) {
-      return bar
+      return filterNavAndSidebar(bar)
     }
     return res
   }
