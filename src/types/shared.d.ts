@@ -25,12 +25,7 @@ export interface FileInfo extends FileInfoSlim {
 //   ChildData extends Record<string, any> = NodeData,
 // > = NodeData & Record<ChildKey, Tree<NodeData, ChildKey, ChildData>[]>;
 
-/**
- * 树形结构节点类型
- * @template T - 节点数据类型
- * @template ChildKey - 子节点键名类型
- */
 export type Tree<
   T extends Record<string, any> = FileInfo,
   ChildKey extends string | symbol = 'children',
-> = T & Record<ChildKey, Tree<T, ChildKey>[]>
+> = T & Partial<Record<ChildKey, Tree<T, ChildKey>[]>>

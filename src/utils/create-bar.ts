@@ -52,7 +52,7 @@ function docTree2Bar(docTree: Tree<NodeData, 'items'> | null): Bar {
     return bar
   }
 
-  const nav: NavItem[] = docTree.items
+  const nav: NavItem[] = docTree.items!
     .filter(item => !item.link?.toLowerCase().endsWith('/index'))
     .map(({ link, items, ...item }) => {
       if (link) {
@@ -68,7 +68,7 @@ function docTree2Bar(docTree: Tree<NodeData, 'items'> | null): Bar {
     })
 
   // 将 nav 作为 sidebar 的 key
-  const sidebar = docTree.items
+  const sidebar = docTree.items!
     .reduce((sidebarMulti, cur) => {
       const { text, activeMatch, link, items } = cur
 
@@ -157,6 +157,7 @@ export async function createBar(
       return nodeData
     },
   })
+
   const bar = docTree2Bar(docTree)
   return bar
 }
