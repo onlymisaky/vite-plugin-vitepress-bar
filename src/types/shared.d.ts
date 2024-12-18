@@ -26,6 +26,6 @@ export interface FileInfo extends FileInfoSlim {
 // > = NodeData & Record<ChildKey, Tree<NodeData, ChildKey, ChildData>[]>;
 
 export type Tree<
-  T extends Record<string, any> = FileInfo,
+  T extends Record<string, any>,
   ChildKey extends string | symbol = 'children',
 > = T & Partial<Record<ChildKey, Tree<T, ChildKey>[]>>
