@@ -1,6 +1,6 @@
 import type { DefaultTheme } from 'vitepress'
 import type { Bar, NavItem, NormalizePluginOptions, SidebarMulti } from '../types'
-import type { FileInfo } from '../types/shared'
+import type { FileInfo, Tree } from '../types/shared'
 import { readDirTree } from '../core/read-dir-tree/index'
 import { isNeedProcess } from './is-need-process'
 import { mdReg } from './normalize'
@@ -19,16 +19,21 @@ function setSidebarMulti(
 }
 
 function getLinkPrefixByParent(parent: FileInfo | null | undefined, root: string): string {
-  if (!parent) {
+  if (!parent)
     return '/'
+
+  const pathSegments: string[] = []
+  let currentParent: FileInfo | null | undefined = parent
+
+  while (currentParent && currentParent.path !== root) {
+    pathSegments.unshift(currentParent.name)
+    currentParent = currentParent.parent
   }
-  let link = '/'
-  let _parent: FileInfo | null | undefined = parent
-  while (_parent && _parent.path !== root) {
-    link = `/${_parent.name}/${link}`
-    _parent = _parent.parent
-  }
-  return link
+
+  if (pathSegments.length === 0)
+    return '/'
+
+  return `/${pathSegments.join('/')}/`
 }
 
 interface NodeData {
@@ -39,76 +44,17 @@ interface NodeData {
   collapsed?: boolean
 }
 
-export function createBar(
-  srcDir: string,
-  options: NormalizePluginOptions,
-  srcExclude: string[] | undefined,
-): Promise<Bar> {
-  const root = srcDir
+function docTree2Bar(docTree: Tree<NodeData, 'items'> | null): Bar {
+  if (!docTree) {
+    const nav: NavItem[] = []
+    const sidebar: SidebarMulti = {}
+    const bar: Bar = { nav, sidebar }
+    return bar
+  }
 
-  return readDirTree<NodeData, 'items'>(root, {
-    childrenKey: 'items',
-    type: 'iterative',
-    async shouldSkip(fileInfo) {
-      // 不是 md 文件
-      if (fileInfo.stat.isFile() && !mdReg.test(fileInfo.name)) {
-        return true
-      }
-      // 空文件夹
-      if (fileInfo.stat.isDirectory() && fileInfo.files?.length === 0) {
-        return true
-      }
-
-      const skip = !(await isNeedProcess(fileInfo, options, { srcDir, srcExclude }))
-      return skip
-    },
-    transform: (fileInfo) => {
-      // 根节点
-      if (fileInfo.path === root) {
-        return {
-          text: fileInfo.name,
-          link: '/',
-          activeMatch: '/',
-        }
-      }
-
-      const text = fileInfo.name.replace(mdReg, '')
-      const link = getLinkPrefixByParent(fileInfo.parent, root) + text
-
-      const nodeData: NodeData = {
-        text,
-        link,
-        activeMatch: link,
-      }
-
-      if (fileInfo.stat.isDirectory()) {
-        const hasIndex = fileInfo.files.some(item => item.toLowerCase() === 'index.md')
-        // 没有 index.md 的文件夹, 需要删除 link
-        if (!hasIndex) {
-          delete nodeData.link
-        }
-      }
-
-      if (fileInfo.stat.isFile()) {
-        const isIndex = fileInfo.name.toLowerCase() === 'index.md'
-        // 除了根目录下的 index.md 文件，不在结果中展示
-        // 因为已经为父级节点设置了 link
-        if (isIndex && fileInfo.path !== root) {
-          return null
-        }
-      }
-
-      return nodeData
-    },
-  }).then((res) => {
-    if (!res) {
-      const nav: NavItem[] = []
-      const sidebar: SidebarMulti = {}
-      const bar: Bar = { nav, sidebar }
-      return bar
-    }
-
-    const nav = res.items.filter(item => !item.link?.toLowerCase().endsWith('/index')).map(({ link, items, ...item }) => {
+  const nav: NavItem[] = docTree.items
+    .filter(item => !item.link?.toLowerCase().endsWith('/index'))
+    .map(({ link, items, ...item }) => {
       if (link) {
         return {
           link,
@@ -121,8 +67,9 @@ export function createBar(
       } as DefaultTheme.NavItemChildren
     })
 
-    // 将 nav 作为 sidebar 的 key
-    const sidebar = res.items.reduce((sidebarMulti, cur) => {
+  // 将 nav 作为 sidebar 的 key
+  const sidebar = docTree.items
+    .reduce((sidebarMulti, cur) => {
       const { text, activeMatch, link, items } = cur
 
       // 你是来捣乱的吧 (空文件夹，正常情况不会出现，因为 shouldSkip 已经排除掉了)
@@ -146,8 +93,70 @@ export function createBar(
       return sidebarMulti
     }, { '/': [] } as SidebarMulti)
 
-    const bar: Bar = { nav, sidebar }
+  const bar: Bar = { nav, sidebar }
 
-    return bar
+  return bar
+}
+
+export async function createBar(
+  srcDir: string,
+  options: NormalizePluginOptions,
+  srcExclude: string[] | undefined,
+): Promise<Bar> {
+  const root = srcDir
+
+  const docTree = await readDirTree<NodeData, 'items'>(root, {
+    childrenKey: 'items',
+    type: 'iterative',
+    async shouldSkip(fileInfo) {
+      // 不是 md 文件
+      if (fileInfo.stat.isFile() && !mdReg.test(fileInfo.name))
+        return true
+      // 空文件夹
+      if (fileInfo.stat.isDirectory() && fileInfo.files?.length === 0)
+        return true
+
+      return !(await isNeedProcess(fileInfo, options, { srcDir, srcExclude }))
+    },
+    transform: (fileInfo) => {
+      // 根节点
+      if (fileInfo.path === root) {
+        return {
+          text: fileInfo.name,
+          link: '/',
+          activeMatch: '/',
+        }
+      }
+
+      const text = fileInfo.name.replace(mdReg, '')
+      const link = getLinkPrefixByParent(fileInfo.parent, root) + text
+
+      const nodeData: NodeData = {
+        text,
+        link,
+        activeMatch: link,
+      }
+
+      // 处理目录节点
+      if (fileInfo.stat.isDirectory()) {
+        const hasIndex = fileInfo.files.some(item => item.toLowerCase() === 'index.md')
+        // 没有 index.md 的文件夹, 需要删除 link
+        if (!hasIndex) {
+          delete nodeData.link
+        }
+      }
+
+      // 处理文件节点
+      if (fileInfo.stat.isFile()) {
+        const isIndex = fileInfo.name.toLowerCase() === 'index.md'
+        // 排除非根目录下的 index.md 文件
+        if (isIndex && fileInfo.path !== root)
+          return null
+      }
+
+      return nodeData
+    },
   })
+  const bar = docTree2Bar(docTree)
+  return bar
 }
