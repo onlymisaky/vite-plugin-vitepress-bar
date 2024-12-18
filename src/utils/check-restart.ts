@@ -1,7 +1,5 @@
 import type { NormalizePluginOptions } from '../types'
-import * as path from 'node:path'
-import { statPromisefy } from '../core/read-dir-tree/utils'
-import { isNeedProcess } from './is-need-process'
+import fg from 'fast-glob'
 
 export async function checkRestart(
   eventName: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir',
@@ -10,19 +8,31 @@ export async function checkRestart(
   options: NormalizePluginOptions,
   { srcDir, srcExclude }: { srcDir: string, srcExclude: string[] | undefined },
 ): Promise<void | undefined> {
+  // 新增文件夹不会影响 bar ,因为空文件夹应该排除掉
+  if (eventName === 'addDir') {
+    return
+  }
+  // 文件内容更改也不会影响 bar ,因为 title 是根据文件名生成(后续版本可能会根据文件内容生成)
   if (eventName === 'change') {
     return
   }
-  const [statError, stat] = await statPromisefy(filePath)
-  if (statError)
-    return
-  if (await isNeedProcess({
-    path: filePath,
-    name: path.basename(filePath),
-    stat,
-  }, options, { srcDir, srcExclude })) {
-    restart()
+
+  if (srcExclude) {
+    const matchedFiles = fg.sync(srcExclude, {
+      cwd: srcDir,
+      dot: true,
+      onlyFiles: false,
+      onlyDirectories: false,
+      ignore: ['**/*.!(md|MD|Md|mD)'],
+    })
+    const excluded = matchedFiles.some(item => filePath.endsWith(item))
+    if (excluded) {
+      return
+    }
   }
+
+  // TODO
+  restart()
 }
 
 function debounce(fn: (...args: any[]) => any, delay: number) {

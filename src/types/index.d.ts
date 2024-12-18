@@ -1,6 +1,6 @@
 import type { UserConfig as ViteUserConfig } from 'vite'
 import type { DefaultTheme, SiteConfig, UserConfig as VitepressUserConfig } from 'vitepress'
-import type { FileInfoSlim, MaybePromise } from './shared'
+import type { FileInfo, MaybePromise } from './shared'
 
 export interface UserConfig extends ViteUserConfig {
   vitepress: VitepressUserConfig<DefaultTheme.Config> & SiteConfig
@@ -25,14 +25,14 @@ export interface PluginOptions {
    * 优先级高于 `excluded`
    * 支持绝对路径、正则、fast-glob、自定义函数
    */
-  included: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfoSlim) => MaybePromise<boolean>)
+  included: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfo) => MaybePromise<boolean>)
   /**
    * 设置当前文件或目录是否在 `nav` 和 `sidebar` 中显示(这意味着只有知道该链接存在的人才能访问，恶意穷举除外)
    * 继承自 `srcExclude` 配置项，既 `vitepress` 排除的目录也会被排除
    * 优先级低于 `included`
    * 支持绝对路径、正则、fast-glob、自定义函数
    */
-  excluded: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfoSlim) => MaybePromise<boolean>)
+  excluded: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfo) => MaybePromise<boolean>)
 
   /**
    * `bar` 生成后的回调
@@ -43,6 +43,6 @@ export interface PluginOptions {
 }
 
 export interface NormalizePluginOptions extends PluginOptions {
-  included: (fileInfo: FileInfoSlim) => MaybePromise<boolean>
-  excluded: (fileInfo: FileInfoSlim) => MaybePromise<boolean>
+  included: (fileInfo: FileInfo) => MaybePromise<boolean>
+  excluded: (fileInfo: FileInfo) => MaybePromise<boolean>
 }

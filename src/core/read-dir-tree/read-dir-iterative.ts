@@ -17,13 +17,13 @@ export async function readDirTreeIterative<
 
   while (queue.length > 0) {
     const current = queue.shift()!
-    const [statError, stat] = await statPromisefy(current.path)
+    const [statError, stats] = await statPromisefy(current.path)
 
     if (statError) {
       continue
     }
 
-    const type = stat.isFile() ? 'file' : stat.isDirectory() ? 'directory' : 'other'
+    const type = stats.isFile() ? 'file' : stats.isDirectory() ? 'directory' : 'other'
     if (!['file', 'directory'].includes(type)) {
       continue
     }
@@ -42,7 +42,7 @@ export async function readDirTreeIterative<
     const fileInfo: FileInfo = {
       path: fullpath,
       name: filename,
-      stat,
+      stats,
       files,
       parent: current.parentFileInfo,
     }

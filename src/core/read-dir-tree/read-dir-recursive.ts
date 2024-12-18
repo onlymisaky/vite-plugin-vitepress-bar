@@ -16,12 +16,12 @@ export async function readDirTreeRecursive<
     return null
   }
 
-  const [statError, stat] = await statPromisefy(dir)
+  const [statError, stats] = await statPromisefy(dir)
   if (statError) {
     return null
   }
 
-  const type = stat.isFile() ? 'file' : stat.isDirectory() ? 'directory' : 'other'
+  const type = stats.isFile() ? 'file' : stats.isDirectory() ? 'directory' : 'other'
 
   if (!['file', 'directory'].includes(type))
     return null
@@ -40,7 +40,7 @@ export async function readDirTreeRecursive<
   const fileInfo: FileInfo = {
     path: fullpath,
     name: filename,
-    stat,
+    stats,
     files,
     parent: parentFileInfo,
   }

@@ -5,10 +5,13 @@ export type MaybePromise<T> = T | Promise<T>
 export interface FileInfoSlim {
   path: string
   name: string
-  stat: fs.Stats
 }
 
-export interface FileInfo extends FileInfoSlim {
+export interface FileInfoSlimWithStats extends FileInfoSlim {
+  stats: fs.Stats
+}
+
+export interface FileInfo extends FileInfoSlimWithStats {
   files: string[]
   parent: FileInfo | null | undefined
 }

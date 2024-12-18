@@ -1,10 +1,10 @@
 import type { NormalizePluginOptions } from '../types'
-import type { FileInfoSlim } from '../types/shared'
+import type { FileInfo } from '../types/shared'
 import * as fs from 'node:fs'
 import fg from 'fast-glob'
 
 export async function isNeedProcess(
-  fileInfo: FileInfoSlim,
+  fileInfo: FileInfo,
   options: NormalizePluginOptions,
   src: { srcDir: string, srcExclude: string[] | undefined },
 ): Promise<boolean> {
@@ -15,16 +15,21 @@ export async function isNeedProcess(
     return true
   }
 
-  if (!fileInfo.path.startsWith(srcDir)) {
-    return false
-  }
-
   if (srcExclude) {
-    const matchedFiles = fg.sync(srcExclude)
+    const matchedFiles = fg.sync(srcExclude, {
+      dot: true,
+      onlyFiles: false,
+      onlyDirectories: false,
+      ignore: ['**/*.!(md|MD|Md|mD)'],
+    })
     const excluded = matchedFiles.some(item => fileInfo.path.endsWith(item))
     if (excluded) {
       return false
     }
+  }
+
+  if (!fileInfo.path.startsWith(srcDir)) {
+    return false
   }
 
   const included = await options.included(fileInfo)

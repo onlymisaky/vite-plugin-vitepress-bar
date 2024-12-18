@@ -41,7 +41,7 @@ export default defineConfig({
   - `string[]`
   - `RegExp`
   - `RegExp[]`
-  - `(fileInfo: FileInfoSlim) => MaybePromise<boolean>`
+  - `(fileInfo: FileInfo) => MaybePromise<boolean>`
 
 ### excluded
 
@@ -54,7 +54,7 @@ export default defineConfig({
   - `string[]`
   - `RegExp`
   - `RegExp[]`
-  - `(fileInfo: FileInfoSlim) => MaybePromise<boolean>`
+  - `(fileInfo: FileInfo) => MaybePromise<boolean>`
 
 ### complete
 
@@ -67,13 +67,21 @@ export default defineConfig({
 
 ## 类型说明
 
-### FileInfoSlim
+### FileInfo
 
 ```typescript
-export interface FileInfoSlim {
+interface FileInfoSlim {
   path: string
   name: string
-  stat: fs.Stats
+}
+
+interface FileInfoSlimWithStats extends FileInfoSlim {
+  stats: fs.Stats
+}
+
+interface FileInfo extends FileInfoSlimWithStats {
+  files: string[]
+  parent: FileInfo | null | undefined
 }
 ```
 
@@ -93,7 +101,6 @@ type NavItem = DefaultTheme.NavItemChildren | DefaultTheme.NavItemWithLink
 interface SidebarMulti {
   [key: string]: DefaultTheme.SidebarItem[]
 }
-
 
 interface Bar {
   sidebar: SidebarMulti

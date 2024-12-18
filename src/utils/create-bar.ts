@@ -110,10 +110,10 @@ export async function createBar(
     type: 'iterative',
     async shouldSkip(fileInfo) {
       // 不是 md 文件
-      if (fileInfo.stat.isFile() && !mdReg.test(fileInfo.name))
+      if (fileInfo.stats.isFile() && !mdReg.test(fileInfo.name))
         return true
       // 空文件夹
-      if (fileInfo.stat.isDirectory() && fileInfo.files?.length === 0)
+      if (fileInfo.stats.isDirectory() && fileInfo.files?.length === 0)
         return true
 
       return !(await isNeedProcess(fileInfo, options, { srcDir, srcExclude }))
@@ -138,7 +138,7 @@ export async function createBar(
       }
 
       // 处理目录节点
-      if (fileInfo.stat.isDirectory()) {
+      if (fileInfo.stats.isDirectory()) {
         const hasIndex = fileInfo.files.some(item => item.toLowerCase() === 'index.md')
         // 没有 index.md 的文件夹, 需要删除 link
         if (!hasIndex) {
@@ -147,7 +147,7 @@ export async function createBar(
       }
 
       // 处理文件节点
-      if (fileInfo.stat.isFile()) {
+      if (fileInfo.stats.isFile()) {
         const isIndex = fileInfo.name.toLowerCase() === 'index.md'
         // 排除非根目录下的 index.md 文件
         if (isIndex && fileInfo.path !== root)

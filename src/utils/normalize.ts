@@ -1,5 +1,5 @@
 import type { Bar, NormalizePluginOptions, PluginOptions } from '../types/index'
-import type { FileInfoSlim } from '../types/shared'
+import type { FileInfo } from '../types/shared'
 import fg from 'fast-glob'
 
 const ignorePathReg = /^(?!.*(?:\/\.vitepress(?:\/|$)|\/\.git(?:\/|$)|\/node_modules(?:\/|$)|\/dist(?:\/|$))).*$/
@@ -7,7 +7,12 @@ export const mdReg = /\.md$/i
 
 function matchPathname(soruce: string | RegExp, target: string): boolean {
   if (typeof soruce === 'string') {
-    const matchedFiles = fg.sync(soruce)
+    const matchedFiles = fg.sync(soruce, {
+      dot: true,
+      onlyFiles: false,
+      onlyDirectories: false,
+      ignore: ['**/*.!(md|MD|Md|mD)'],
+    })
     const result = matchedFiles.some(file => target.endsWith(file))
     return result
   }
@@ -19,17 +24,17 @@ function matchPathname(soruce: string | RegExp, target: string): boolean {
 
 function normalizeIncluded(param: PluginOptions['included']) {
   if (typeof param === 'string' || param instanceof RegExp) {
-    return function included(fileInfo: FileInfoSlim) {
+    return function included(fileInfo: FileInfo) {
       return matchPathname(param, fileInfo.path)
     }
   }
   if (Array.isArray(param)) {
-    return function included(fileInfo: FileInfoSlim) {
+    return function included(fileInfo: FileInfo) {
       return param.some(item => matchPathname(item, fileInfo.path))
     }
   }
   if (typeof param === 'function') {
-    return async function included(fileInfo: FileInfoSlim) {
+    return async function included(fileInfo: FileInfo) {
       try {
         return !!(await param(fileInfo))
       }
@@ -38,24 +43,24 @@ function normalizeIncluded(param: PluginOptions['included']) {
       }
     }
   }
-  return function included(fileInfo: FileInfoSlim) {
+  return function included(fileInfo: FileInfo) {
     return ignorePathReg.test(fileInfo.path)
   }
 }
 
 function normalizeExcluded(param: PluginOptions['excluded']) {
   if (typeof param === 'string' || param instanceof RegExp) {
-    return function excluded(fileInfo: FileInfoSlim) {
+    return function excluded(fileInfo: FileInfo) {
       return matchPathname(param, fileInfo.path)
     }
   }
   if (Array.isArray(param)) {
-    return function excluded(fileInfo: FileInfoSlim) {
+    return function excluded(fileInfo: FileInfo) {
       return param.some(item => matchPathname(item, fileInfo.path))
     }
   }
   if (typeof param === 'function') {
-    return async function excluded(fileInfo: FileInfoSlim) {
+    return async function excluded(fileInfo: FileInfo) {
       try {
         return !!(await param(fileInfo))
       }
@@ -64,7 +69,7 @@ function normalizeExcluded(param: PluginOptions['excluded']) {
       }
     }
   }
-  return function excluded(fileInfo: FileInfoSlim) {
+  return function excluded(fileInfo: FileInfo) {
     return !ignorePathReg.test(fileInfo.path)
   }
 }

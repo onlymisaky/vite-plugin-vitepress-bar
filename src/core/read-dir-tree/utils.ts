@@ -21,8 +21,8 @@ export function readDirPromisefy(dir: string): Promise<[NodeJS.ErrnoException | 
  */
 export function statPromisefy(dir: string): Promise<[NodeJS.ErrnoException | null, fs.Stats]> {
   return new Promise<[NodeJS.ErrnoException | null, fs.Stats]>((resolve) => {
-    fs.stat(dir, (err, stat) => {
-      resolve([err, stat])
+    fs.stat(dir, (err, stats) => {
+      resolve([err, stats])
     })
   })
 }
