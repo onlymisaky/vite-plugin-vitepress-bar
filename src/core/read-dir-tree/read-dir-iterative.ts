@@ -1,4 +1,4 @@
-import type { FileInfo, Options, QueueItem, Tree } from './types'
+import type { FileInfo, QueueItem, ReadDirTreeOptions, Tree } from './types'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { readDirPromisefy, statPromisefy } from './utils'
@@ -6,7 +6,7 @@ import { readDirPromisefy, statPromisefy } from './utils'
 export async function readDirTreeIterative<
   T extends Record<string, any>,
   ChildKey extends string | symbol = 'children',
->(dir: string, options: Required<Options<T, ChildKey>>): Promise<Tree<T, ChildKey> | null> {
+>(dir: string, options: Required<ReadDirTreeOptions<T, ChildKey>>): Promise<Tree<T, ChildKey> | null> {
   if (!fs.existsSync(dir)) {
     return null
   }

@@ -6,7 +6,7 @@
  * 所以，简简单单的实现就好了
  */
 
-import type { FileInfo, Options, TraversalType, Tree } from './types'
+import type { FileInfo, ReadDirTreeOptions, TraversalType, Tree } from './types'
 import { readDirTreeIterative } from './read-dir-iterative'
 import { readDirTreeRecursive } from './read-dir-recursive'
 import { normalizeOptions } from './utils'
@@ -22,9 +22,13 @@ import { normalizeOptions } from './utils'
 export async function readDirTree<
   T extends Record<string, any> = FileInfo,
   ChildKey extends string | symbol = 'children',
->(dir: string, options: Options<T, ChildKey> & { type?: TraversalType }): Promise<Tree<T, ChildKey> | null> {
-  const { type = 'iterative', ...rest } = options
+>(
+  dir: string,
+  options?: ReadDirTreeOptions<T, ChildKey> & { type?: TraversalType },
+): Promise<Tree<T, ChildKey> | null> {
+  const { type = 'iterative', ...rest } = { ...options }
+  const _options = normalizeOptions(rest)
   return type === 'recursive'
-    ? await readDirTreeRecursive(dir, normalizeOptions(rest))
-    : await readDirTreeIterative(dir, normalizeOptions(rest))
+    ? await readDirTreeRecursive(dir, _options)
+    : await readDirTreeIterative(dir, _options)
 }

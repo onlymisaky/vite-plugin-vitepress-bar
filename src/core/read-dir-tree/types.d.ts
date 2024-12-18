@@ -5,7 +5,7 @@ export { FileInfo, Tree }
 
 export type TraversalType = 'recursive' | 'iterative'
 
-export interface Options<
+export interface ReadDirTreeOptions<
   T extends Record<string, any> = FileInfo,
   ChildKey extends string | symbol = 'children',
 > {

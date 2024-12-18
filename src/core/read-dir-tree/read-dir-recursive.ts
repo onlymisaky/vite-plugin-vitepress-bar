@@ -1,4 +1,4 @@
-import type { FileInfo, Options, Tree } from './types'
+import type { FileInfo, ReadDirTreeOptions, Tree } from './types'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { readDirPromisefy, statPromisefy } from './utils'
@@ -8,7 +8,7 @@ export async function readDirTreeRecursive<
   ChildKey extends string | symbol = 'children',
 >(
   dir: string,
-  options: Required<Options<T, ChildKey>>,
+  options: Required<ReadDirTreeOptions<T, ChildKey>>,
   parentNode: Tree<T, ChildKey> | null = null,
   parentFileInfo: FileInfo | null = null,
 ): Promise<Tree<T, ChildKey> | null> {

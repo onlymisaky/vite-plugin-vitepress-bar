@@ -1,4 +1,4 @@
-import type { FileInfo, Options } from './types'
+import type { FileInfo, ReadDirTreeOptions } from './types'
 import * as fs from 'node:fs'
 
 /**
@@ -30,16 +30,16 @@ export function statPromisefy(dir: string): Promise<[NodeJS.ErrnoException | nul
 export function normalizeOptions<
   T extends Record<string, any> = FileInfo,
   ChildKey extends string | symbol = 'children',
->(options: Options<T, ChildKey>): Required<Options<T, ChildKey>> {
+>(options: ReadDirTreeOptions<T, ChildKey>): Required<ReadDirTreeOptions<T, ChildKey>> {
   const { childrenKey = 'children', transform, shouldSkip } = options
 
-  async function defaultTransform(...args: Parameters<Required<Options<T, ChildKey>>['transform']>): Promise<T> {
+  async function defaultTransform(...args: Parameters<Required<ReadDirTreeOptions<T, ChildKey>>['transform']>): Promise<T> {
     const [fileInfo, parentNode] = args
     if (typeof transform === 'function') {
       try {
         const nodeData = await transform(...args)
         if (typeof nodeData === 'object') {
-          return nodeData
+          return nodeData as T
         }
         return { value: nodeData, parent: parentNode } as unknown as T
       }
@@ -53,7 +53,7 @@ export function normalizeOptions<
     return fileInfo as unknown as T
   }
 
-  async function defaultShouldSkip(...args: Parameters<Required<Options<T, ChildKey>>['shouldSkip']>): Promise<boolean> {
+  async function defaultShouldSkip(...args: Parameters<Required<ReadDirTreeOptions<T, ChildKey>>['shouldSkip']>): Promise<boolean> {
     if (typeof shouldSkip === 'function') {
       try {
         return !!(await shouldSkip(...args))
@@ -69,5 +69,5 @@ export function normalizeOptions<
     childrenKey,
     transform: defaultTransform,
     shouldSkip: defaultShouldSkip,
-  } as Required<Options<T, ChildKey>>
+  } as Required<ReadDirTreeOptions<T, ChildKey>>
 }
