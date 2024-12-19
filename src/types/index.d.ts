@@ -17,23 +17,20 @@ export interface Bar {
   nav: NavItem[]
 }
 
+type FilterCondition =
+  | string // 精确路径匹配
+  | string[] // 多个路径匹配
+  | RegExp // 正则匹配
+  | RegExp[] // 多个正则匹配
+  | ((fileInfo: FileInfo) => MaybePromise<boolean>) // 自定义函数匹配
+
 export interface PluginOptions {
   /**
-   * 设置当前文件或目录是否在 `nav` 和 `sidebar` 中显示
+   * 文件过滤器，用于精确控制文件在 `nav` 和 `sidebar` 中显示
    * 继承自 `srcDir` 配置项，既只有能被 `vitepress` 读取到才会被读取
    * 如果是个空文件夹，将不会显示
-   * 优先级高于 `excluded`
-   * 支持绝对路径、正则、fast-glob、自定义函数
    */
-  included: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfo) => MaybePromise<boolean>)
-  /**
-   * 设置当前文件或目录是否在 `nav` 和 `sidebar` 中显示(这意味着只有知道该链接存在的人才能访问，恶意穷举除外)
-   * 继承自 `srcExclude` 配置项，既 `vitepress` 排除的目录也会被排除
-   * 优先级低于 `included`
-   * 支持绝对路径、正则、fast-glob、自定义函数
-   */
-  excluded: string | string[] | RegExp | RegExp[] | ((fileInfo: FileInfo) => MaybePromise<boolean>)
-
+  filter: (fileInfo: FileInfo) => MaybePromise<boolean>
   /**
    * `bar` 生成后的回调
    * 如果传入该配置项，则会将该函数的返回值作为 `nav` 和 `sidebar` 覆盖原有的配置
@@ -43,6 +40,5 @@ export interface PluginOptions {
 }
 
 export interface NormalizePluginOptions extends PluginOptions {
-  included: (fileInfo: FileInfo) => MaybePromise<boolean>
-  excluded: (fileInfo: FileInfo) => MaybePromise<boolean>
+  filter: (fileInfo: FileInfo) => MaybePromise<boolean>
 }

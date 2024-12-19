@@ -1,5 +1,5 @@
 import type { NormalizePluginOptions } from '../types'
-import fg from 'fast-glob'
+import { isNeedProcess } from './is-need-process'
 
 export async function checkRestart(
   eventName: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir',
@@ -8,30 +8,22 @@ export async function checkRestart(
   options: NormalizePluginOptions,
   { srcDir, srcExclude }: { srcDir: string, srcExclude: string[] | undefined },
 ): Promise<void | undefined> {
-  // 新增文件夹不会影响 bar ,因为空文件夹应该排除掉
-  if (eventName === 'addDir') {
+  // 新增文件夹不会影响 bar
+  // 因为空文件夹应该排除掉
+  if (eventName === 'addDir')
     return
-  }
-  // 文件内容更改也不会影响 bar ,因为 title 是根据文件名生成(后续版本可能会根据文件内容生成)
-  if (eventName === 'change') {
+
+  // 文件内容更改也不会影响 bar
+  // 因为 title 和 link 是根据文件名生成(后续版本可能会根据文件内容生成)
+  if (eventName === 'change')
+    return
+
+  if (!isNeedProcess(filePath, { srcDir, srcExclude })) {
     return
   }
 
-  if (srcExclude) {
-    const matchedFiles = fg.sync(srcExclude, {
-      cwd: srcDir,
-      dot: true,
-      onlyFiles: false,
-      onlyDirectories: false,
-      ignore: ['**/*.!(md|MD|Md|mD)'],
-    })
-    const excluded = matchedFiles.some(item => filePath.endsWith(item))
-    if (excluded) {
-      return
-    }
-  }
+  // TODO options.filter
 
-  // TODO
   restart()
 }
 

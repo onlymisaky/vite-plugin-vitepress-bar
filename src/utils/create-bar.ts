@@ -54,16 +54,18 @@ function docTree2Bar(docTree: Tree<NodeData, 'items'> | null): Bar {
 
   const nav: NavItem[] = docTree.items!
     .filter(item => !item.link?.toLowerCase().endsWith('/index'))
-    .map(({ link, items, ...item }) => {
+    .map(({ link, items, ...others }) => {
+      // 有链接，单独展示链接，没有下拉子级
       if (link) {
         return {
           link,
-          ...item,
+          ...others,
         } as DefaultTheme.NavItemWithLink
       }
+      // 没有链接，展示下拉子级
       return {
         items,
-        ...item,
+        ...others,
       } as DefaultTheme.NavItemChildren
     })
 
@@ -73,7 +75,8 @@ function docTree2Bar(docTree: Tree<NodeData, 'items'> | null): Bar {
       const { text, activeMatch, link, items } = cur
 
       // 你是来捣乱的吧 (空文件夹，正常情况不会出现，因为 shouldSkip 已经排除掉了)
-      if (!link && !items) {
+      // 应该排除从全是空文件夹的情况
+      if (!link && (!items || items.length === 0)) {
         return sidebarMulti
       }
 
@@ -109,14 +112,18 @@ export async function createBar(
     childrenKey: 'items',
     type: 'iterative',
     async shouldSkip(fileInfo) {
-      // 不是 md 文件
-      if (fileInfo.stats.isFile() && !mdReg.test(fileInfo.name))
+      if (!isNeedProcess(fileInfo.path, { srcDir, srcExclude })) {
         return true
+      }
+
       // 空文件夹
       if (fileInfo.stats.isDirectory() && fileInfo.files?.length === 0)
         return true
 
-      return !(await isNeedProcess(fileInfo, options, { srcDir, srcExclude }))
+      const included = await options.filter(fileInfo)
+
+      // 未知情况，不排除
+      return !included
     },
     transform: (fileInfo) => {
       // 根节点

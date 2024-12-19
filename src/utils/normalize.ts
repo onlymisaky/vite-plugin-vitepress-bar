@@ -2,9 +2,11 @@ import type { Bar, NormalizePluginOptions, PluginOptions } from '../types/index'
 import type { FileInfo } from '../types/shared'
 import fg from 'fast-glob'
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 const ignorePathReg = /^(?!.*(?:\/\.vitepress(?:\/|$)|\/\.git(?:\/|$)|\/node_modules(?:\/|$)|\/dist(?:\/|$))).*$/
 export const mdReg = /\.md$/i
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function matchPathname(soruce: string | RegExp, target: string): boolean {
   if (typeof soruce === 'string') {
     const matchedFiles = fg.sync(soruce, {
@@ -22,19 +24,19 @@ function matchPathname(soruce: string | RegExp, target: string): boolean {
   return false
 }
 
-function normalizeIncluded(param: PluginOptions['included']) {
-  if (typeof param === 'string' || param instanceof RegExp) {
-    return function included(fileInfo: FileInfo) {
-      return matchPathname(param, fileInfo.path)
-    }
-  }
-  if (Array.isArray(param)) {
-    return function included(fileInfo: FileInfo) {
-      return param.some(item => matchPathname(item, fileInfo.path))
-    }
-  }
+function normalizeFilter(param: PluginOptions['filter']) {
+  // if (typeof param === 'string' || param instanceof RegExp) {
+  //   return function filter(fileInfo: FileInfo) {
+  //     return matchPathname(param, fileInfo.path)
+  //   }
+  // }
+  // if (Array.isArray(param)) {
+  //   return function filter(fileInfo: FileInfo) {
+  //     return param.some(item => matchPathname(item, fileInfo.path))
+  //   }
+  // }
   if (typeof param === 'function') {
-    return async function included(fileInfo: FileInfo) {
+    return async function filter(fileInfo: FileInfo) {
       try {
         return !!(await param(fileInfo))
       }
@@ -43,34 +45,8 @@ function normalizeIncluded(param: PluginOptions['included']) {
       }
     }
   }
-  return function included(fileInfo: FileInfo) {
-    return ignorePathReg.test(fileInfo.path)
-  }
-}
-
-function normalizeExcluded(param: PluginOptions['excluded']) {
-  if (typeof param === 'string' || param instanceof RegExp) {
-    return function excluded(fileInfo: FileInfo) {
-      return matchPathname(param, fileInfo.path)
-    }
-  }
-  if (Array.isArray(param)) {
-    return function excluded(fileInfo: FileInfo) {
-      return param.some(item => matchPathname(item, fileInfo.path))
-    }
-  }
-  if (typeof param === 'function') {
-    return async function excluded(fileInfo: FileInfo) {
-      try {
-        return !!(await param(fileInfo))
-      }
-      catch {
-        return false
-      }
-    }
-  }
-  return function excluded(fileInfo: FileInfo) {
-    return !ignorePathReg.test(fileInfo.path)
+  return function filter(_fileInfo: FileInfo) {
+    return true
   }
 }
 
@@ -107,8 +83,7 @@ function normalizeComplate(param: PluginOptions['complete']) {
 
 export function normalizePluginOptions(pluginOptions: PluginOptions): NormalizePluginOptions {
   const userOptions: NormalizePluginOptions = {
-    included: normalizeIncluded(pluginOptions.included),
-    excluded: normalizeExcluded(pluginOptions.excluded),
+    filter: normalizeFilter(pluginOptions.filter) as NormalizePluginOptions['filter'],
     complete: normalizeComplate(pluginOptions.complete) as NormalizePluginOptions['complete'],
   }
   return userOptions

@@ -1,20 +1,23 @@
-import type { NormalizePluginOptions } from '../types'
-import type { FileInfo } from '../types/shared'
-import * as fs from 'node:fs'
+import * as path from 'node:path'
 import fg from 'fast-glob'
 
-export async function isNeedProcess(
-  fileInfo: FileInfo,
-  options: NormalizePluginOptions,
-  src: { srcDir: string, srcExclude: string[] | undefined },
-): Promise<boolean> {
-  // 处理用户传入的 excluded 与 vitepress 默认的 srcDir 、srcExclude 的优先级
+/**
+ * @description 根据 srcDir 、srcExclude 优先判断是否需要处理文件
+ * @param filePath 文件全路径
+ */
+export function isNeedProcess(filePath: string, src: { srcDir: string, srcExclude?: string[] }): boolean {
   const { srcDir, srcExclude } = src
 
-  if (srcDir === fileInfo.path) {
-    return true
-  }
+  // 不是 srcDir 目录下的文件
+  if ((!filePath.startsWith(srcDir) && filePath !== srcDir))
+    return false
 
+  // 不是 md 或文件夹
+  const extension = path.extname(filePath)
+  if (!['', '.md'].includes(extension))
+    return false
+
+  // 已排除的文件
   if (srcExclude) {
     const matchedFiles = fg.sync(srcExclude, {
       dot: true,
@@ -22,26 +25,11 @@ export async function isNeedProcess(
       onlyDirectories: false,
       ignore: ['**/*.!(md|MD|Md|mD)'],
     })
-    const excluded = matchedFiles.some(item => fileInfo.path.endsWith(item))
+    const excluded = matchedFiles.some(item => filePath.endsWith(item))
     if (excluded) {
       return false
     }
   }
-
-  if (!fileInfo.path.startsWith(srcDir)) {
-    return false
-  }
-
-  const included = await options.included(fileInfo)
-  const excluded = await options.excluded(fileInfo)
-  const exists = fs.existsSync(fileInfo.path)
-
-  if (!exists)
-    return false
-  if (!included)
-    return false
-  if (excluded)
-    return false
 
   return true
 }
