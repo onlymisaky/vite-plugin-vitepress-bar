@@ -4,11 +4,13 @@
 
 ## 特性
 
-- [X] 支持生成 `nav` 和 `sidebar`
-- [X] 支持自定义生成范围
-- [X] 支持自定义排序
-- [X] 支持自定义标题
+- [X] 自动生成 `nav` 和 `sidebar`
+- [X] 支持路径过滤
 - [X] 支持 `dev` 模式自动更新
+- [ ] 支持自定义排序 (enableMdContent)
+- [ ] 支持自定义标题 (enableMdContent)
+- [ ] 自动排除空文件夹
+- [ ] nav 优化 (层级问题, 没有 index.md 问题)
 
 ## 使用
 

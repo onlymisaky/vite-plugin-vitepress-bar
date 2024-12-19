@@ -108,9 +108,9 @@ export async function createBar(
 ): Promise<Bar> {
   const root = srcDir
 
-  const docTree = await readDirTree<NodeData, 'items'>(root, {
-    childrenKey: 'items',
+  const docTree = await readDirTree(root, {
     type: 'iterative',
+    childrenKey: 'items',
     async shouldSkip(fileInfo) {
       if (!isNeedProcess(fileInfo.path, { srcDir, srcExclude })) {
         return true
@@ -122,7 +122,6 @@ export async function createBar(
 
       const included = await options.filter(fileInfo)
 
-      // 未知情况，不排除
       return !included
     },
     transform: (fileInfo) => {
@@ -141,7 +140,7 @@ export async function createBar(
       const nodeData: NodeData = {
         text,
         link,
-        activeMatch: link,
+        activeMatch: link.endsWith('/') ? link : `${link}/`,
       }
 
       // 处理目录节点
