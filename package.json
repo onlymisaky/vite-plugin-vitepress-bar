@@ -1,7 +1,7 @@
 {
   "name": "vite-plugin-vitepress-bar",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "为 vitepress 自动生成 nav 和 sidebar",
   "author": "onlymisaky <onlymisaky@gmail.com>",
   "license": "MIT",
