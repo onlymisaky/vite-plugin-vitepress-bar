@@ -1,5 +1,6 @@
 import type { Plugin } from 'vitepress'
 import type { PluginOptions, UserConfig } from './types/index'
+import { toPosixPath } from './core/read-dir-tree/utils'
 import { debounceCheckRestart } from './utils/check-restart'
 import { createBar } from './utils/create-bar'
 import { normalizePluginOptions } from './utils/normalize'
@@ -15,7 +16,7 @@ export default function vitepressBar(pluginOptions?: Partial<PluginOptions>): Pl
       const viteConfig = config as UserConfig
       const vitepress = viteConfig.vitepress
       const { userConfig } = vitepress
-      srcDir = vitepress.srcDir
+      srcDir = toPosixPath(vitepress.srcDir)
       srcExclude = userConfig.srcExclude
       const bar = await createBar(srcDir, normalizePluginConfig, srcExclude)
       const { sidebar, nav } = normalizePluginConfig.complete(bar)

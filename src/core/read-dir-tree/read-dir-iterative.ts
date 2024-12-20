@@ -1,7 +1,7 @@
 import type { FileInfo, QueueItem, ReadDirTreeOptions, Tree } from './types'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { readDirPromisefy, statPromisefy } from './utils'
+import { readDirPromisefy, statPromisefy, toPosixPath } from './utils'
 
 export async function readDirTreeIterative<
   T extends Record<string, any>,
@@ -28,7 +28,7 @@ export async function readDirTreeIterative<
       continue
     }
 
-    const fullpath = path.resolve(current.path)
+    const fullpath = toPosixPath(path.resolve(current.path))
     const filename = path.basename(fullpath)
 
     let files: string[] = []
@@ -77,7 +77,7 @@ export async function readDirTreeIterative<
     if (type === 'directory') {
       if (files.length > 0) {
         queue.push(...files.map(file => ({
-          path: path.join(fullpath, file),
+          path: toPosixPath(path.join(fullpath, file)),
           parentNode: node,
           parentFileInfo: fileInfo,
         })))

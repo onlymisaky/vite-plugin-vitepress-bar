@@ -1,5 +1,6 @@
 import type { FileInfo, ReadDirTreeOptions } from './types'
 import * as fs from 'node:fs'
+import * as path from 'node:path'
 
 /**
  * Promise 化的目录读取
@@ -70,4 +71,8 @@ export function normalizeOptions<
     transform: defaultTransform,
     shouldSkip: defaultShouldSkip,
   } as Required<ReadDirTreeOptions<T, ChildKey>>
+}
+
+export function toPosixPath(filePath: string): string {
+  return path.normalize(filePath).replace(/[\\/]+/g, '/')
 }

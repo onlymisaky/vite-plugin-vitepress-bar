@@ -1,7 +1,7 @@
 import type { FileInfo, ReadDirTreeOptions, Tree } from './types'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { readDirPromisefy, statPromisefy } from './utils'
+import { readDirPromisefy, statPromisefy, toPosixPath } from './utils'
 
 export async function readDirTreeRecursive<
   T extends Record<string, any>,
@@ -26,7 +26,7 @@ export async function readDirTreeRecursive<
   if (!['file', 'directory'].includes(type))
     return null
 
-  const fullpath = path.resolve(dir)
+  const fullpath = toPosixPath(path.resolve(dir))
   const filename = path.basename(fullpath)
 
   let files: string[] = []
@@ -56,7 +56,7 @@ export async function readDirTreeRecursive<
 
   // TODO 当子文件过多时，需要控制最大并发数
   const childrenPromises = files.map((file) => {
-    const childDir = path.join(fullpath, file)
+    const childDir = toPosixPath(path.join(fullpath, file))
     return readDirTreeRecursive(childDir, options, nodeData as Tree<T, ChildKey>, fileInfo)
   })
 
