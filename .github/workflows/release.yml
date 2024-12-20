@@ -6,11 +6,12 @@ permissions:
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
 
 jobs:
   build:
+    if: "${{ startsWith(github.event.head_commit.message, 'chore: release v') }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +25,7 @@ jobs:
       - run: npm run build
 
   publish-npm:
+    if: "${{ startsWith(github.event.head_commit.message, 'chore: release v') }}"
     needs: build
     runs-on: ubuntu-latest
     steps:
