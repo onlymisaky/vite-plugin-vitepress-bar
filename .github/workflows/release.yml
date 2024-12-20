@@ -36,6 +36,7 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
+      - run: npm i @rollup/rollup-linux-x64-gnu -D
       - run: npm publish -r --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
