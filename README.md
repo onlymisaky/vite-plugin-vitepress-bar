@@ -1,3 +1,14 @@
+<!--
+https://cn.vitejs.dev/guide/api-plugin#universal-hooks
+https://cn.rollupjs.org/plugin-development/#resolveid
+
+https://github.dev/QC2168/vite-plugin-vitepress-auto-sidebar/tree/main
+https://github.dev/Xaviw/vite-plugin-vitepress-auto-nav/blob/953858804d5d6da605b50227bfcaa5b190794256/README-CN.md
+
+https://notes.fe-mm.com/fe/html/
+https://github.com/maomao1996/mm-notes/blob/master/scripts/daily-notes.js
+ -->
+
 # vite-plugin-vitepress-bar
 
 为 `vitepress` 自动生成 `nav` 和 `sidebar`
